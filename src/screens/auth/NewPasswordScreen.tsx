@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  TouchableWithoutFeedback,
+  Keyboard,
+  TextInput as RNTextInput,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Colors, Fonts, Spacing, Radius } from '@/theme';
@@ -27,6 +30,7 @@ export function NewPasswordScreen({ route, navigation }: Props) {
   const [expiredMessage, setExpiredMessage] = useState<string | null>(route.params?.error ?? null);
   const { isWide } = useResponsive();
   const clearRecovery = usePasswordRecoveryStore((s) => s.clear);
+  const confirmRef = useRef<RNTextInput>(null);
 
   const handleBackToReset = () => {
     clearRecovery();
@@ -83,6 +87,7 @@ export function NewPasswordScreen({ route, navigation }: Props) {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
@@ -103,13 +108,22 @@ export function NewPasswordScreen({ route, navigation }: Props) {
               onChangeText={setPassword}
               secureTextEntry
               placeholder="8+ characters"
+              returnKeyType="next"
+              onSubmitEditing={() => confirmRef.current?.focus()}
+              blurOnSubmit={false}
             />
             <TextInput
+              ref={confirmRef}
               label="Confirm Password"
               value={confirm}
               onChangeText={setConfirm}
               secureTextEntry
               placeholder="Re-enter password"
+              returnKeyType="done"
+              onSubmitEditing={() => {
+                Keyboard.dismiss();
+                handleSubmit();
+              }}
             />
 
             <Button
@@ -121,6 +135,7 @@ export function NewPasswordScreen({ route, navigation }: Props) {
           </View>
         </View>
       </ScrollView>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 }

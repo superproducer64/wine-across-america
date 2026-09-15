@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,9 @@ import {
   Platform,
   Pressable,
   Alert,
+  TouchableWithoutFeedback,
+  Keyboard,
+  TextInput as RNTextInput,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Colors, Fonts, Spacing, Radius } from '@/theme';
@@ -44,6 +47,10 @@ export function SignupScreen({ navigation, route }: Props) {
   const [success, setSuccess] = useState('');
   const [inviteStatus, setInviteStatus] = useState<InviteStatus>(inviteCode ? 'checking' : 'none');
   const [inviteError, setInviteError] = useState('');
+
+  const emailRef = useRef<RNTextInput>(null);
+  const passwordRef = useRef<RNTextInput>(null);
+  const confirmRef = useRef<RNTextInput>(null);
 
   useEffect(() => {
     // The pending-code store's only job was steering the initial route here —
@@ -144,6 +151,7 @@ export function SignupScreen({ navigation, route }: Props) {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
@@ -180,8 +188,12 @@ export function SignupScreen({ navigation, route }: Props) {
             onChangeText={setName}
             placeholder="Jane Smith"
             autoCapitalize="words"
+            returnKeyType="next"
+            onSubmitEditing={() => emailRef.current?.focus()}
+            blurOnSubmit={false}
           />
           <TextInput
+            ref={emailRef}
             label="Email"
             value={email}
             onChangeText={setEmail}
@@ -189,20 +201,33 @@ export function SignupScreen({ navigation, route }: Props) {
             autoCapitalize="none"
             autoCorrect={false}
             placeholder="you@example.com"
+            returnKeyType="next"
+            onSubmitEditing={() => passwordRef.current?.focus()}
+            blurOnSubmit={false}
           />
           <TextInput
+            ref={passwordRef}
             label="Password"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
             placeholder="8+ characters"
+            returnKeyType="next"
+            onSubmitEditing={() => confirmRef.current?.focus()}
+            blurOnSubmit={false}
           />
           <TextInput
+            ref={confirmRef}
             label="Confirm Password"
             value={confirm}
             onChangeText={setConfirm}
             secureTextEntry
             placeholder="Re-enter password"
+            returnKeyType="done"
+            onSubmitEditing={() => {
+              Keyboard.dismiss();
+              handleSignup();
+            }}
           />
 
           {/* Role selector */}
@@ -266,6 +291,7 @@ export function SignupScreen({ navigation, route }: Props) {
         </Pressable>
         </View>
       </ScrollView>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 }

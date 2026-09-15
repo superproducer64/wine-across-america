@@ -7,6 +7,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Colors, Fonts, Spacing, Radius } from '@/theme';
@@ -46,6 +48,7 @@ export function ResetRequestScreen({ navigation }: Props) {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
@@ -81,6 +84,11 @@ export function ResetRequestScreen({ navigation }: Props) {
                   autoCapitalize="none"
                   autoCorrect={false}
                   placeholder="you@example.com"
+                  returnKeyType="done"
+                  onSubmitEditing={() => {
+                    Keyboard.dismiss();
+                    handleSubmit();
+                  }}
                 />
 
                 <Button
@@ -101,6 +109,7 @@ export function ResetRequestScreen({ navigation }: Props) {
           </Pressable>
         </View>
       </ScrollView>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 }

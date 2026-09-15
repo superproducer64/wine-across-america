@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { forwardRef, useState } from 'react';
 import {
   TextInput as RNTextInput,
   View,
@@ -17,7 +17,10 @@ interface Props extends TextInputProps {
   containerStyle?: ViewStyle;
 }
 
-export function TextInput({ label, error, hint, containerStyle, style, ...props }: Props) {
+export const TextInput = forwardRef<RNTextInput, Props>(function TextInput(
+  { label, error, hint, containerStyle, style, ...props },
+  ref
+) {
   const [focused, setFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -28,6 +31,7 @@ export function TextInput({ label, error, hint, containerStyle, style, ...props 
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <View style={styles.inputWrapper}>
         <RNTextInput
+          ref={ref}
           {...props}
           secureTextEntry={isPassword && !showPassword}
           style={[
@@ -62,7 +66,7 @@ export function TextInput({ label, error, hint, containerStyle, style, ...props 
       {!error && hint ? <Text style={styles.hint}>{hint}</Text> : null}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

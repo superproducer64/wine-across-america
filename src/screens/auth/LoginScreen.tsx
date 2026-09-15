@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  TouchableWithoutFeedback,
+  Keyboard,
+  TextInput as RNTextInput,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Colors, Fonts, Spacing, Radius } from '@/theme';
@@ -30,6 +33,8 @@ export function LoginScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const passwordRef = useRef<RNTextInput>(null);
 
   const handleLogin = async () => {
     setError('');
@@ -121,6 +126,7 @@ export function LoginScreen({ navigation }: Props) {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
@@ -147,14 +153,23 @@ export function LoginScreen({ navigation }: Props) {
             autoCapitalize="none"
             autoCorrect={false}
             placeholder="you@example.com"
+            returnKeyType="next"
+            onSubmitEditing={() => passwordRef.current?.focus()}
+            blurOnSubmit={false}
           />
 
           <TextInput
+            ref={passwordRef}
             label="Password"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
             placeholder="••••••••"
+            returnKeyType="done"
+            onSubmitEditing={() => {
+              Keyboard.dismiss();
+              handleLogin();
+            }}
           />
 
           <Pressable onPress={() => navigation.navigate('ResetRequest')}>
@@ -180,6 +195,7 @@ export function LoginScreen({ navigation }: Props) {
         </Pressable>
         </View>
       </ScrollView>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 }

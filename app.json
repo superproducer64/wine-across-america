@@ -113,7 +113,8 @@
           }
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-web-browser"
     ],
     "scheme": "pouracrossamerica",
     "extra": {

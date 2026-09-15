@@ -44,7 +44,7 @@
         "backgroundColor": "#1F1518"
       },
       "package": "com.paa.myapp",
-      "versionCode": 6,
+      "versionCode": 8,
       "allowBackup": false,
       "permissions": [
         "android.permission.CAMERA",

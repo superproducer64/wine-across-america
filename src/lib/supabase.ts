@@ -2,7 +2,10 @@ import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
 import * as Crypto from 'expo-crypto';
-import * as FileSystem from 'expo-file-system';
+// expo-file-system's stable API changed shape in SDK 54 (expo-file-system/next
+// became the default). Importing the /legacy subpath keeps readAsStringAsync +
+// EncodingType.Base64 working exactly as before without touching call sites.
+import * as FileSystem from 'expo-file-system/legacy';
 import { decode as decodeBase64 } from 'base64-arraybuffer';
 import { Platform } from 'react-native';
 

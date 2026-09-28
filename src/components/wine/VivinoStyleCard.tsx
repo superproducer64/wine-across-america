@@ -96,8 +96,6 @@ const VIVINO_AXIS_DESCRIPTIONS: Record<string, string> = {
     'Tannins from grape skins, seeds, and oak create a drying, grippy sensation. Higher tannin = more structure and aging potential.',
   'Low Acid|High Acid':
     'Acidity gives wine its crispness, freshness, and structure. High-acid wines taste lively and pair well with food; low-acid wines feel rounder and softer.',
-  'Cool|Warming':
-    'Alcohol creates a warm sensation on the palate and in the throat. Higher alcohol wines feel richer and more warming.',
 };
 
 function AxisSlider({
@@ -308,12 +306,13 @@ export function VivinoStyleCard({ entry }: Props) {
         <View style={styles.section}>
           <SectionHeader label="Style" />
           <View style={{ gap: 12 }}>
-            <AxisSlider left="Dry" right="Sweet" value={1 - norm(entry.acidity)} onPress={() => openAxis('Dry', 'Sweet')} />
+            {/* sweetness is null on entries saved before migration 006 — omit the row rather than guess */}
+            {entry.sweetness != null && (
+              <AxisSlider left="Dry" right="Sweet" value={norm(entry.sweetness)} onPress={() => openAxis('Dry', 'Sweet')} />
+            )}
             <AxisSlider left="Light Body" right="Full Body" value={norm(entry.body)} onPress={() => openAxis('Light Body', 'Full Body')} />
             <AxisSlider left="Soft" right="Tannic" value={norm(entry.tannin)} onPress={() => openAxis('Soft', 'Tannic')} />
-            <AxisSlider left="Low Acid" right="High Acid" value={norm(entry.acidity)} onPress={() => openAxis('Low Acid', 'High Acid')} />
-            <AxisSlider left="Cool" right="Warming" value={norm(entry.alcohol)} onPress={() => openAxis('Cool', 'Warming')} />
-          </View>
+            <AxisSlider left="Low Acid" right="High Acid" value={norm(entry.acidity)} onPress={() => openAxis('Low Acid', 'High Acid')} />          </View>
         </View>
 
         <InfoPopover

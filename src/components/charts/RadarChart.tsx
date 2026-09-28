@@ -11,7 +11,7 @@ import { Colors, Fonts } from '@/theme';
 
 interface RadarChartProps {
   scores: {
-    sweetness: number;
+    sweetness: number | null; // null on pre-migration-006 entries; plotted as 0
     acidity: number;
     tannin: number;
     body: number;

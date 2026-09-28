@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -25,12 +25,54 @@ interface ScoreSliderProps {
   lowLabel?: string;
   highLabel?: string;
   tip?: string;
+  /** Called once when the user releases the thumb (not on every move). */
   onChange: (value: number) => void;
+  /** Lets a parent disable its ScrollView while the thumb is being dragged. */
+  onDragStateChange?: (dragging: boolean) => void;
   accentColor?: string;
   disabled?: boolean;
   zones?: SliderZone[];
   onInfo?: () => void;
 }
+
+const ZoneBar = memo(function ZoneBar({
+  zones,
+  activeLabel,
+}: {
+  zones: SliderZone[];
+  activeLabel: string | undefined;
+}) {
+  return (
+    <View style={styles.zoneRow}>
+      {zones.map((zone) => {
+        const isActive = activeLabel === zone.label;
+        const size = zone.max - zone.min + 1;
+        return (
+          <View key={zone.label} style={{ flex: size, alignItems: 'center' }}>
+            <View
+              style={[
+                styles.zoneBand,
+                { backgroundColor: zone.color, opacity: isActive ? 1 : 0.28 },
+              ]}
+            />
+            <Text
+              style={[
+                styles.zoneLabel,
+                {
+                  color: isActive ? zone.color : Colors.inkFaint,
+                  fontFamily: isActive ? Fonts.dmSansMedium : Fonts.dmSans,
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {zone.label}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+});
 
 export function ScoreSlider({
   label,
@@ -42,51 +84,81 @@ export function ScoreSlider({
   highLabel,
   tip,
   onChange,
+  onDragStateChange,
   accentColor = Colors.gold,
   disabled = false,
   zones,
   onInfo,
 }: ScoreSliderProps) {
+  // Local value while dragging; null means "show the committed prop value".
+  // Committing only on release keeps the parent (and its radar chart) from
+  // re-rendering on every move event.
+  const [dragValue, setDragValue] = useState<number | null>(null);
+  const displayValue = dragValue ?? value;
+
+  // The PanResponder is created once, so everything it reads lives in a ref.
+  const live = useRef({ min, max, step, disabled, onChange, onDragStateChange, value });
+  live.current = { min, max, step, disabled, onChange, onDragStateChange, value };
+
   const trackWidth = useRef(0);
+  const gesture = useRef({ startX: 0, last: value });
 
-  const clampValue = useCallback(
-    (raw: number) => {
-      const stepped = Math.round(raw / step) * step;
-      return Math.max(min, Math.min(max, stepped));
-    },
-    [min, max, step]
-  );
+  useEffect(() => {
+    if (dragValue === null) gesture.current.last = value;
+  }, [value, dragValue]);
 
-  const locationToValue = useCallback(
-    (locationX: number) => {
-      if (trackWidth.current === 0) return value;
-      const ratio = locationX / trackWidth.current;
-      const raw = min + ratio * (max - min);
-      return clampValue(raw);
-    },
-    [min, max, value, clampValue]
-  );
+  const panResponder = useMemo(() => {
+    const toValue = (x: number) => {
+      const { min: lo, max: hi, step: st } = live.current;
+      const w = trackWidth.current;
+      if (w === 0) return live.current.value;
+      const ratio = Math.max(0, Math.min(1, x / w));
+      const stepped = Math.round((lo + ratio * (hi - lo)) / st) * st;
+      return Math.max(lo, Math.min(hi, stepped));
+    };
+    const update = (x: number) => {
+      const next = toValue(x);
+      if (next !== gesture.current.last) {
+        gesture.current.last = next;
+        setDragValue(next);
+      }
+    };
+    const finish = () => {
+      const final = gesture.current.last;
+      live.current.onDragStateChange?.(false);
+      if (final !== live.current.value) live.current.onChange(final);
+      setDragValue(null);
+    };
 
-  const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => !disabled,
-    onMoveShouldSetPanResponder: () => !disabled,
-    onPanResponderGrant: (evt) => {
-      if (!disabled) onChange(locationToValue(evt.nativeEvent.locationX));
-    },
-    onPanResponderMove: (evt) => {
-      if (!disabled) onChange(locationToValue(evt.nativeEvent.locationX));
-    },
-  });
+    return PanResponder.create({
+      onStartShouldSetPanResponder: () => !live.current.disabled,
+      onMoveShouldSetPanResponder: () => !live.current.disabled,
+      // Don't let the parent ScrollView take the gesture mid-drag.
+      onPanResponderTerminationRequest: () => false,
+      onShouldBlockNativeResponder: () => true,
+      onPanResponderGrant: (evt) => {
+        live.current.onDragStateChange?.(true);
+        // Track children are pointerEvents="none", so locationX is always
+        // relative to the hit area here. Movement is then tracked with
+        // gestureState.dx, which (unlike locationX) doesn't jump when the
+        // finger passes over the thumb or leaves the track.
+        gesture.current.startX = evt.nativeEvent.locationX;
+        gesture.current.last = live.current.value;
+        update(gesture.current.startX);
+      },
+      onPanResponderMove: (_evt, g) => update(gesture.current.startX + g.dx),
+      onPanResponderRelease: finish,
+      onPanResponderTerminate: finish,
+    });
+  }, []);
 
   const handleTrackLayout = (e: LayoutChangeEvent) => {
     trackWidth.current = e.nativeEvent.layout.width;
   };
 
-  const fillRatio = (value - min) / (max - min);
-  const activeZone = zones?.find((z) => value >= z.min && value <= z.max);
-  const fillColor = disabled
-    ? Colors.inkFaint
-    : (activeZone?.color ?? accentColor);
+  const fillRatio = (displayValue - min) / (max - min);
+  const activeZone = zones?.find((z) => displayValue >= z.min && displayValue <= z.max);
+  const fillColor = disabled ? Colors.inkFaint : (activeZone?.color ?? accentColor);
 
   return (
     <View style={[styles.container, disabled && styles.containerDisabled]}>
@@ -100,79 +172,40 @@ export function ScoreSlider({
           )}
         </View>
         <View style={[styles.valueBadge, { backgroundColor: fillColor + '22', borderColor: fillColor + '66' }]}>
-          <Text style={[styles.valueText, { color: fillColor }]}>{value}</Text>
+          <Text style={[styles.valueText, { color: fillColor }]}>{displayValue}</Text>
         </View>
       </View>
 
       {tip ? <Text style={styles.tip}>{tip}</Text> : null}
 
-      {zones && zones.length > 0 && (
-        <View style={styles.zoneRow}>
-          {zones.map((zone) => {
-            const isActive = activeZone?.label === zone.label;
-            const size = zone.max - zone.min + 1;
-            return (
-              <View key={zone.label} style={{ flex: size, alignItems: 'center' }}>
-                <View
-                  style={[
-                    styles.zoneBand,
-                    {
-                      backgroundColor: zone.color,
-                      opacity: isActive ? 1 : 0.28,
-                    },
-                  ]}
-                />
-                <Text
-                  style={[
-                    styles.zoneLabel,
-                    {
-                      color: isActive ? zone.color : Colors.inkFaint,
-                      fontFamily: isActive ? Fonts.dmSansMedium : Fonts.dmSans,
-                    },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {zone.label}
-                </Text>
-              </View>
-            );
-          })}
-        </View>
-      )}
+      {zones && zones.length > 0 && <ZoneBar zones={zones} activeLabel={activeZone?.label} />}
 
-      <View style={styles.sliderRow}>
-        {lowLabel ? <Text style={styles.anchor}>{lowLabel}</Text> : null}
-
-        <View
-          style={[styles.track, disabled && styles.trackDisabled]}
-          onLayout={handleTrackLayout}
-          {...panResponder.panHandlers}
-        >
-          <View
-            style={[
-              styles.fill,
-              { width: `${fillRatio * 100}%`, backgroundColor: fillColor },
-            ]}
-          />
+      {/* Tall hit area around a thin visual track; track uses the full width */}
+      <View style={styles.hitArea} onLayout={handleTrackLayout} {...panResponder.panHandlers}>
+        <View pointerEvents="none" style={[styles.track, disabled && styles.trackDisabled]}>
+          <View style={[styles.fill, { width: `${fillRatio * 100}%`, backgroundColor: fillColor }]} />
           {!disabled && (
             <View
               style={[
                 styles.thumb,
-                {
-                  left: `${fillRatio * 100}%`,
-                  backgroundColor: fillColor,
-                  borderColor: Colors.surface,
-                },
+                { left: `${fillRatio * 100}%`, backgroundColor: fillColor, borderColor: Colors.surface },
               ]}
             />
           )}
         </View>
-
-        {highLabel ? <Text style={styles.anchor}>{highLabel}</Text> : null}
       </View>
+
+      {lowLabel || highLabel ? (
+        <View style={styles.anchorRow}>
+          <Text style={styles.anchor}>{lowLabel ?? ''}</Text>
+          <Text style={[styles.anchor, styles.anchorRight]}>{highLabel ?? ''}</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
+
+const THUMB = 22;
 
 const styles = StyleSheet.create({
   container: {
@@ -243,13 +276,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
     textAlign: 'center',
   },
-  sliderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  hitArea: {
+    height: 36,
+    justifyContent: 'center',
   },
   track: {
-    flex: 1,
     height: 6,
     backgroundColor: Colors.surfaceAlt,
     borderRadius: Radius.full,
@@ -270,17 +301,27 @@ const styles = StyleSheet.create({
   },
   thumb: {
     position: 'absolute',
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: THUMB,
+    height: THUMB,
+    borderRadius: THUMB / 2,
     borderWidth: 3,
     top: -9,
-    marginLeft: -11,
+    marginLeft: -THUMB / 2,
+  },
+  anchorRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+    marginTop: 2,
   },
   anchor: {
     fontFamily: Fonts.dmSans,
     fontSize: 11,
     color: Colors.inkMuted,
     flexShrink: 1,
+    maxWidth: '48%',
+  },
+  anchorRight: {
+    textAlign: 'right',
   },
 });

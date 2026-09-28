@@ -333,7 +333,7 @@ export interface WineEntry {
   location_geo: { lat: number; lng: number } | null;
 
   // Structure Wheel (1-10)
-  sweetness: number;
+  sweetness: number | null; // null on entries saved before migration 006
   acidity: number;
   tannin: number;
   body: number;

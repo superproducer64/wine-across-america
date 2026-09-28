@@ -116,6 +116,8 @@ export function Step2StructureWheel() {
   const { profile } = useAuthStore();
   const [openInfo, setOpenInfo] = useState<string | null>(null);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  // Locks the ScrollView while a slider thumb is being dragged
+  const [sliderDragging, setSliderDragging] = useState(false);
 
   const isSommelier =
     profile?.user_role === 'sommelier' && profile?.sommelier_status === 'approved';
@@ -145,7 +147,7 @@ export function Step2StructureWheel() {
 
   // ─── Scores ────────────────────────────────────────────────────────────────
   const scores = {
-    sweetness:     draft.sweetness,
+    sweetness:     draft.sweetness ?? 5, // draft store defaults to 5; only null on old saved entries
     acidity:       draft.acidity,
     tannin:        draft.tannin,
     body:          draft.body,
@@ -246,6 +248,7 @@ export function Step2StructureWheel() {
                     highLabel={dim.highAnchor}
                     zones={getStructureZones(dim.key)}
                     onChange={(v) => setStructureWheel({ [dim.key]: v })}
+                    onDragStateChange={setSliderDragging}
                     onInfo={PARAMETER_INFO[dim.key] ? () => setOpenInfo(dim.key) : undefined}
                   />
                 )}
@@ -282,6 +285,7 @@ export function Step2StructureWheel() {
                 style={styles.wideScrollCol}
                 contentContainerStyle={styles.wideScrollContent}
                 showsVerticalScrollIndicator={false}
+                scrollEnabled={!sliderDragging}
               >
                 {slidersPanel}
               </ScrollView>
@@ -307,6 +311,7 @@ export function Step2StructureWheel() {
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
+        scrollEnabled={!sliderDragging}
       >
         <Text style={styles.stepTitle}>Structure</Text>
         <Text style={styles.intro}>

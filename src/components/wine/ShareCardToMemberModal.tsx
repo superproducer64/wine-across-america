@@ -11,8 +11,9 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
-import { Colors, Fonts, Radius, Spacing, Shadows } from '@/theme';
-import { searchUserByEmail, uploadWineCard, sendMessage } from '@/lib/supabase';
+import { Colors, Fonts, Radius, Spacing } from '@/theme';
+import { uploadWineCard, sendMessage, MemberSearchResult } from '@/lib/supabase';
+import { MemberPicker } from '@/components/messages/MemberPicker';
 import { WineEntry } from '@/types';
 
 interface Props {
@@ -23,29 +24,16 @@ interface Props {
   cardImageUri: string;
 }
 
-interface FoundUser {
-  id: string;
-  email: string;
-  display_name: string | null;
-}
-
 export function ShareCardToMemberModal({ visible, onClose, entry, senderId, cardImageUri }: Props) {
-  const [email, setEmail] = useState('');
-  const [searching, setSearching] = useState(false);
-  const [results, setResults] = useState<FoundUser[]>([]);
-  const [selected, setSelected] = useState<FoundUser | null>(null);
+  const [selected, setSelected] = useState<MemberSearchResult | null>(null);
   const [caption, setCaption] = useState('');
   const [sending, setSending] = useState(false);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [searchDone, setSearchDone] = useState(false);
 
   const reset = () => {
-    setEmail('');
-    setResults([]);
     setSelected(null);
     setCaption('');
     setStatus('idle');
-    setSearchDone(false);
   };
 
   const handleClose = () => {
@@ -53,22 +41,9 @@ export function ShareCardToMemberModal({ visible, onClose, entry, senderId, card
     onClose();
   };
 
-  const handleSearch = async () => {
-    if (!email.trim()) return;
-    setSearching(true);
-    setResults([]);
-    setSelected(null);
+  const handleSelect = (member: MemberSearchResult | null) => {
+    setSelected(member);
     setStatus('idle');
-    setSearchDone(false);
-
-    const { data, error } = await searchUserByEmail(email.trim());
-    setSearching(false);
-    setSearchDone(true);
-
-    if (error || !data) return;
-
-    const filtered = (data as FoundUser[]).filter((u) => u.id !== senderId);
-    setResults(filtered);
   };
 
   const handleSend = async () => {
@@ -124,68 +99,8 @@ export function ShareCardToMemberModal({ visible, onClose, entry, senderId, card
               </Text>
             </View>
 
-            <Text style={styles.inputLabel}>Enter recipient's email</Text>
-            <View style={styles.searchRow}>
-              <TextInput
-                style={styles.input}
-                value={email}
-                onChangeText={(t) => {
-                  setEmail(t);
-                  setSearchDone(false);
-                  setResults([]);
-                  setSelected(null);
-                  setStatus('idle');
-                }}
-                placeholder="friend@example.com"
-                placeholderTextColor={Colors.inkFaint}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                returnKeyType="search"
-                onSubmitEditing={handleSearch}
-              />
-              <Pressable
-                style={[styles.searchBtn, searching && styles.searchBtnDisabled]}
-                onPress={handleSearch}
-                disabled={searching || !email.trim()}
-              >
-                {searching ? (
-                  <ActivityIndicator color={Colors.white} size="small" />
-                ) : (
-                  <Text style={styles.searchBtnText}>Find</Text>
-                )}
-              </Pressable>
-            </View>
-
-            {searchDone && results.length === 0 && (
-              <View style={styles.noResults}>
-                <Text style={styles.noResultsText}>
-                  No Pour Across America member found with that email.
-                </Text>
-              </View>
-            )}
-
-            {results.map((foundUser) => {
-              const isSelected = selected?.id === foundUser.id;
-              return (
-                <Pressable
-                  key={foundUser.id}
-                  style={[styles.userRow, isSelected && styles.userRowSelected]}
-                  onPress={() => setSelected(isSelected ? null : foundUser)}
-                >
-                  <View style={styles.userAvatar}>
-                    <Text style={styles.userAvatarText}>
-                      {(foundUser.display_name ?? foundUser.email)[0].toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={styles.userInfo}>
-                    <Text style={styles.userName}>{foundUser.display_name ?? 'App Member'}</Text>
-                    <Text style={styles.userEmail}>{foundUser.email}</Text>
-                  </View>
-                  {isSelected && <Text style={styles.checkmark}>✓</Text>}
-                </Pressable>
-              );
-            })}
+            <Text style={styles.inputLabel}>Send to</Text>
+            <MemberPicker selected={selected} onSelect={handleSelect} />
 
             {selected && status !== 'success' && (
               <>
@@ -205,7 +120,7 @@ export function ShareCardToMemberModal({ visible, onClose, entry, senderId, card
             {status === 'success' && (
               <View style={[styles.feedback, styles.feedbackSuccess]}>
                 <Text style={styles.feedbackText}>
-                  🍷 Card sent to {selected?.display_name ?? selected?.email}!
+                  🍷 Card sent to {selected?.display_label}!
                 </Text>
               </View>
             )}
@@ -225,7 +140,7 @@ export function ShareCardToMemberModal({ visible, onClose, entry, senderId, card
                   <ActivityIndicator color={Colors.ink} size="small" />
                 ) : (
                   <Text style={styles.sendBtnText}>
-                    Send to {selected.display_name ?? selected.email}
+                    Send to {selected.display_label}
                   </Text>
                 )}
               </Pressable>
@@ -276,56 +191,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: Colors.inkMuted,
   },
-  searchRow: { flexDirection: 'row', gap: Spacing.sm },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    fontFamily: Fonts.dmSansRegular,
-    fontSize: 15,
-    color: Colors.ink,
-    backgroundColor: Colors.white,
-  },
-  searchBtn: {
-    backgroundColor: Colors.gold,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.lg,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minWidth: 64,
-  },
-  searchBtnDisabled: { opacity: 0.5 },
-  searchBtnText: { fontFamily: Fonts.dmSansMedium, fontSize: 14, color: Colors.white },
-  noResults: { paddingVertical: Spacing.md },
-  noResultsText: { fontFamily: Fonts.dmSans, fontSize: 14, color: Colors.inkMuted, textAlign: 'center' },
-  userRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    backgroundColor: Colors.white,
-    borderRadius: Radius.md,
-    padding: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    ...Shadows.sm,
-  },
-  userRowSelected: { borderColor: Colors.gold, backgroundColor: Colors.goldPale },
-  userAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.gold,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  userAvatarText: { fontFamily: Fonts.playfair, fontSize: 17, color: Colors.ink },
-  userInfo: { flex: 1 },
-  userName: { fontFamily: Fonts.dmSansRegular, fontSize: 15, color: Colors.ink },
-  userEmail: { fontFamily: Fonts.dmSans, fontSize: 12, color: Colors.inkMuted },
-  checkmark: { fontFamily: Fonts.dmSansMedium, fontSize: 18, color: Colors.gold },
   captionInput: {
     borderWidth: 1,
     borderColor: Colors.border,

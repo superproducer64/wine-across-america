@@ -1,6 +1,9 @@
 import React, { useCallback, useState } from 'react';
 import {
   Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -12,7 +15,8 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Fonts, Radius, Spacing } from '@/theme';
 import { useResponsive, SIDEBAR_WIDTH, MAX_CONTENT_WIDTH } from '@/hooks/useResponsive';
-import { fetchConversations, Conversation } from '@/lib/supabase';
+import { fetchConversations, Conversation, MemberSearchResult } from '@/lib/supabase';
+import { MemberPicker } from '@/components/messages/MemberPicker';
 import { useAuthStore } from '@/stores/authStore';
 import { MainStackParamList } from '@/navigation/types';
 
@@ -90,6 +94,20 @@ export function InboxScreen() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [composeOpen, setComposeOpen] = useState(false);
+
+  // MessageDetail loads the existing thread with this member if there is one;
+  // otherwise it opens empty and the thread is created by the first send.
+  const openThreadWith = (member: MemberSearchResult | null) => {
+    if (!member) return;
+    setComposeOpen(false);
+    const existing = conversations.find((c) => c.otherUserId === member.id);
+    navigation.navigate('MessageDetail', {
+      otherUserId: member.id,
+      otherDisplayName: existing?.otherDisplayName ?? member.display_label,
+      otherAvatarUrl: existing?.otherAvatarUrl ?? member.avatar_url,
+    });
+  };
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -117,7 +135,19 @@ export function InboxScreen() {
             </Pressable>
           </View>
 
-          <Text style={styles.title}>Messages</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.title}>Messages</Text>
+            <Pressable
+              style={styles.composeBtn}
+              onPress={() => setComposeOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel="New message"
+              hitSlop={6}
+            >
+              <Text style={styles.composeIcon}>✎</Text>
+              <Text style={styles.composeText}>New</Text>
+            </Pressable>
+          </View>
 
           {error ? (
             <View style={styles.errorBanner}>
@@ -158,6 +188,28 @@ export function InboxScreen() {
           )}
         </View>
       </ScrollView>
+
+      <Modal
+        visible={composeOpen}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setComposeOpen(false)}
+      >
+        <KeyboardAvoidingView
+          style={styles.sheet}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={styles.sheetHeader}>
+            <Text style={styles.sheetTitle}>New Message</Text>
+            <Pressable onPress={() => setComposeOpen(false)} hitSlop={10}>
+              <Text style={styles.sheetClose}>Cancel</Text>
+            </Pressable>
+          </View>
+          <ScrollView contentContainerStyle={styles.sheetBody} keyboardShouldPersistTaps="handled">
+            <MemberPicker selected={null} onSelect={openThreadWith} autoFocus />
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -180,12 +232,42 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.gold,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   title: {
     fontFamily: Fonts.playfair,
     fontSize: 28,
     color: Colors.ink,
     marginBottom: 4,
   },
+  composeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.gold,
+    borderRadius: Radius.full,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  composeIcon: { fontSize: 14, color: Colors.ink },
+  composeText: { fontFamily: Fonts.dmSansMedium, fontSize: 13, color: Colors.ink },
+  sheet: { flex: 1, backgroundColor: Colors.surface },
+  sheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.lg,
+    borderBottomWidth: 0.5,
+    borderBottomColor: Colors.border,
+  },
+  sheetTitle: { fontFamily: Fonts.playfair, fontSize: 20, color: Colors.ink },
+  sheetClose: { fontFamily: Fonts.dmSansRegular, fontSize: 15, color: Colors.gold },
+  sheetBody: { padding: Spacing.xl },
   errorBanner: {
     backgroundColor: 'rgba(139,46,46,0.08)',
     borderRadius: Radius.md,

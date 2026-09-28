@@ -797,14 +797,23 @@ export async function uploadWineCard(
   }
 }
 
-// ─── User Search ──────────────────────────────────────────────────────────────
+// ─── Member Search (MemberPicker) ─────────────────────────────────────────────
+// Server-side via the search_members RPC (migration 023): respects
+// directory_visible, excludes the caller, never returns email, max 8 rows.
 
-export async function searchUserByEmail(email: string) {
-  return supabase
-    .from('user_profiles')
-    .select('id, email, display_name')
-    .ilike('email', email.trim())
-    .limit(5);
+export type MemberSearchResult = {
+  id: string;
+  display_label: string;
+  avatar_url: string | null;
+  user_role: 'enthusiast' | 'sommelier';
+};
+
+export async function searchMembers(
+  query: string
+): Promise<{ data: MemberSearchResult[] | null; error: string | null }> {
+  const { data, error } = await supabase.rpc('search_members', { query });
+  if (error) return { data: null, error: error.message };
+  return { data: (data ?? []) as MemberSearchResult[], error: null };
 }
 
 // ─── Direct Messages ──────────────────────────────────────────────────────────

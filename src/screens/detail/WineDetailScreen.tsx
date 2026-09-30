@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LABEL_PHOTO_PLACEHOLDER, computeLabelPhotoPlaceholder } from '@/utils/imagePlaceholder';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Colors, Fonts, Spacing, Radius } from '@/theme';
@@ -103,6 +104,7 @@ export function WineDetailScreen({ route, navigation }: Props) {
   const { isWide } = useResponsive();
   const { user } = useAuthStore();
   const { loadForEdit } = useEntryDraftStore();
+  const insets = useSafeAreaInsets();
 
   // Use cached store entry immediately — avoids a network round-trip on every open.
   // Only fall back to fetching if the entry isn't in the store (e.g. deep link).
@@ -622,7 +624,7 @@ export function WineDetailScreen({ route, navigation }: Props) {
       </ScrollView>
 
       {/* Fixed bottom share bar */}
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: Spacing.xl + insets.bottom }]}>
         <Pressable style={styles.bottomBarBtn} onPress={() => setShareSheetOpen(true)}>
           <Text style={styles.bottomBarBtnText}>⬆ Share</Text>
         </Pressable>
@@ -1036,7 +1038,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     paddingHorizontal: Spacing.xl,
     paddingTop: Spacing.md,
-    paddingBottom: Spacing.xl,
     backgroundColor: Colors.surface,
     borderTopWidth: 0.5,
     borderTopColor: Colors.border,

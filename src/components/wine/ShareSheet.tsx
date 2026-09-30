@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { View, Text, Modal, Pressable, StyleSheet, ActivityIndicator, Dimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { captureRef } from 'react-native-view-shot';
 import { Colors, Fonts, Radius, Spacing, Shadows } from '@/theme';
 import { WineEntry } from '@/types';
@@ -18,6 +19,7 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 const CAPTURE_WIDTH = SCREEN_WIDTH - Spacing.xl * 2;
 
 export function ShareSheet({ visible, onClose, entry, onShareText, onShareWithMember }: Props) {
+  const insets = useSafeAreaInsets();
   const cardRef = useRef<View>(null);
   const [sharingSocial, setSharingSocial] = useState(false);
   const [socialError, setSocialError] = useState('');
@@ -58,7 +60,10 @@ export function ShareSheet({ visible, onClose, entry, onShareText, onShareWithMe
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={sharingSocial ? undefined : onClose}>
-        <Pressable style={styles.sheet} onPress={() => {}}>
+        <Pressable
+          style={[styles.sheet, { paddingBottom: Spacing.xxl + insets.bottom }]}
+          onPress={() => {}}
+        >
           <View style={styles.handle} />
           <Text style={styles.title}>Share This Wine</Text>
 
@@ -111,7 +116,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: Radius.xl,
     paddingHorizontal: Spacing.xl,
     paddingTop: Spacing.md,
-    paddingBottom: Spacing.xxl,
     gap: Spacing.sm,
     ...Shadows.lg,
   },

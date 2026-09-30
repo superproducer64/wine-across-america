@@ -10,6 +10,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Sharing from 'expo-sharing';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Colors, Fonts, Spacing, Radius } from '@/theme';
@@ -33,6 +34,7 @@ export function ShareCardScreen({ route, navigation }: Props) {
   const { entryId } = route.params;
   const { entries } = useWineStore();
   const { user } = useAuthStore();
+  const insets = useSafeAreaInsets();
 
   // Use cached store entry immediately — avoids a network round-trip when the
   // entry is already loaded. Only fall back to fetching if the entry isn't in
@@ -164,7 +166,7 @@ export function ShareCardScreen({ route, navigation }: Props) {
 
       {externalError ? <Text style={styles.errorText}>{externalError}</Text> : null}
 
-      <View style={styles.actions}>
+      <View style={[styles.actions, { paddingBottom: Spacing.xl + insets.bottom }]}>
         <Pressable
           style={[styles.actionBtn, styles.actionBtnPrimary, (!cardUri || capturing) && styles.actionBtnDisabled]}
           onPress={() => setShowMemberModal(true)}

@@ -18,6 +18,7 @@ import {
   WorkSans_600SemiBold,
 } from '@expo-google-fonts/work-sans';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { RootNavigator } from '@/navigation/RootNavigator';
 
 if (Platform.OS !== 'web') {
@@ -97,9 +98,11 @@ export default function App() {
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <View style={{ flex: 1 }}>
-          <RootNavigator />
-        </View>
+        <SafeAreaProvider>
+          <View style={{ flex: 1 }}>
+            <RootNavigator />
+          </View>
+        </SafeAreaProvider>
       </GestureHandlerRootView>
     </ErrorBoundary>
   );

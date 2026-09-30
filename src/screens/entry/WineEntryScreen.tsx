@@ -6,6 +6,7 @@ import {
   SafeAreaView,
   Pressable,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Fonts, Spacing, Radius } from '@/theme';
@@ -35,6 +36,7 @@ const BASE_STEPS = [
 
 export function WineEntryScreen(_props: Props) {
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
+  const insets = useSafeAreaInsets();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -313,7 +315,7 @@ export function WineEntryScreen(_props: Props) {
         </View>
 
         {/* Footer */}
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: Spacing.lg + insets.bottom }]}>
           {isLast ? (
             <Button
               label={editingEntryId ? 'Save Changes' : 'Save Wine Entry'}

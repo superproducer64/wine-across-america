@@ -42,6 +42,10 @@ function TabBarIcon({ emoji, label, focused }: { emoji: string; label: string; f
 function CustomTabBar({ state, navigation, insets }: BottomTabBarProps) {
   const { isWide } = useResponsive();
 
+  if (__DEV__) {
+    console.log('[CustomTabBar] insets:', insets);
+  }
+
   if (isWide) {
     return (
       <View style={sidebarStyles.container}>
@@ -85,7 +89,7 @@ function CustomTabBar({ state, navigation, insets }: BottomTabBarProps) {
   }
 
   return (
-    <View style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+    <View style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, 8) + 8 }]}>
       {state.routes.map((route) => {
         const index = state.routes.indexOf(route);
         const focused = state.index === index;
@@ -275,7 +279,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFE4E1',
     borderTopColor: 'rgba(196,132,122,0.3)',
     borderTopWidth: 0.5,
-    height: 70,
+    minHeight: 56,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',

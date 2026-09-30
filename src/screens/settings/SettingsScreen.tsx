@@ -20,6 +20,7 @@ import { useResponsive, SIDEBAR_WIDTH, MAX_CONTENT_WIDTH } from '@/hooks/useResp
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/authStore';
 import { useSubscriptionStore } from '@/stores/subscriptionStore';
+import { SHOW_SUBSCRIPTION_UI } from '@/config/featureFlags';
 import { SommelierCertUpload } from '@/components/auth/SommelierCertUpload';
 import {
   uploadSommelierCert,
@@ -425,59 +426,61 @@ export function SettingsScreen() {
         )}
 
         {/* Subscription */}
-        <View style={styles.subsCard}>
-          <View style={styles.subsHeader}>
-            <View>
-              <Text style={styles.subsLabel}>Current Plan</Text>
-              <Text style={styles.subsTier}>
-                {isSubscribed ? '✨ Intelligence (Pro)' : '📓 Notebook (Free)'}
-              </Text>
+        {SHOW_SUBSCRIPTION_UI && (
+          <View style={styles.subsCard}>
+            <View style={styles.subsHeader}>
+              <View>
+                <Text style={styles.subsLabel}>Current Plan</Text>
+                <Text style={styles.subsTier}>
+                  {isSubscribed ? '✨ Intelligence (Pro)' : '📓 Notebook (Free)'}
+                </Text>
+              </View>
+              {isSubscribed && (
+                <View style={styles.proBadge}>
+                  <Text style={styles.proBadgeText}>PRO</Text>
+                </View>
+              )}
             </View>
+
+            {!isSubscribed && (
+              <View style={styles.upgradeBlock}>
+                <Text style={styles.upgradeTitle}>Upgrade to Intelligence</Text>
+                <Text style={styles.upgradeDesc}>
+                  Full history • Taste fingerprint • Score vs. price chart{'\n'}
+                  Compound search • Creator database • Recommendations
+                </Text>
+                {showUpgradeInfo ? (
+                  <View style={styles.upgradeInfoBox}>
+                    <Text style={styles.upgradeInfoText}>
+                      Pour Across America Pro — $9.99/month or $79/year.{'\n\n'}
+                      Subscription purchase will be available after App Store review.
+                    </Text>
+                    <Pressable onPress={() => setShowUpgradeInfo(false)}>
+                      <Text style={styles.upgradeInfoClose}>Dismiss</Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <Button
+                    label="Upgrade — $9.99/mo"
+                    onPress={() => setShowUpgradeInfo(true)}
+                    style={styles.upgradeBtn}
+                    size="md"
+                  />
+                )}
+                <Text style={styles.upgradeAlt}>or $79/year (save 34%)</Text>
+              </View>
+            )}
+
             {isSubscribed && (
-              <View style={styles.proBadge}>
-                <Text style={styles.proBadgeText}>PRO</Text>
+              <View style={styles.restoreBlock}>
+                <Text style={styles.restoreText}>Restore purchase: checking your purchases…</Text>
               </View>
             )}
           </View>
-
-          {!isSubscribed && (
-            <View style={styles.upgradeBlock}>
-              <Text style={styles.upgradeTitle}>Upgrade to Intelligence</Text>
-              <Text style={styles.upgradeDesc}>
-                Full history • Taste fingerprint • Score vs. price chart{'\n'}
-                Compound search • Creator database • Recommendations
-              </Text>
-              {showUpgradeInfo ? (
-                <View style={styles.upgradeInfoBox}>
-                  <Text style={styles.upgradeInfoText}>
-                    Pour Across America Pro — $9.99/month or $79/year.{'\n\n'}
-                    Subscription purchase will be available after App Store review.
-                  </Text>
-                  <Pressable onPress={() => setShowUpgradeInfo(false)}>
-                    <Text style={styles.upgradeInfoClose}>Dismiss</Text>
-                  </Pressable>
-                </View>
-              ) : (
-                <Button
-                  label="Upgrade — $9.99/mo"
-                  onPress={() => setShowUpgradeInfo(true)}
-                  style={styles.upgradeBtn}
-                  size="md"
-                />
-              )}
-              <Text style={styles.upgradeAlt}>or $79/year (save 34%)</Text>
-            </View>
-          )}
-
-          {isSubscribed && (
-            <View style={styles.restoreBlock}>
-              <Text style={styles.restoreText}>Restore purchase: checking your purchases…</Text>
-            </View>
-          )}
-        </View>
+        )}
 
         {/* Free tier details */}
-        {!isSubscribed && (
+        {SHOW_SUBSCRIPTION_UI && !isSubscribed && (
           <View style={styles.freeDetails}>
             <Text style={styles.freeDetailsTitle}>Free tier includes:</Text>
             {[

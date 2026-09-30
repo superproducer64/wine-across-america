@@ -19,6 +19,7 @@ import { WineGridItem } from '@/components/wine/WineGridItem';
 import { useAuthStore } from '@/stores/authStore';
 import { useWineStore } from '@/stores/wineStore';
 import { useSubscriptionStore } from '@/stores/subscriptionStore';
+import { SHOW_SUBSCRIPTION_UI } from '@/config/featureFlags';
 import { WineEntry, COUNTRIES_AND_REGIONS } from '@/types';
 import { MainStackParamList } from '@/navigation/types';
 
@@ -151,7 +152,7 @@ export function SearchScreen() {
             </View>
           </View>
 
-          {!isSubscribed && (
+          {SHOW_SUBSCRIPTION_UI && !isSubscribed && (
             <View style={styles.paywallHint}>
               <Text style={styles.paywallText}>
                 🔒 Upgrade to Pro for compound search (price range, terroir, tags…)

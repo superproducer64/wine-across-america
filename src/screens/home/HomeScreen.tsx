@@ -15,6 +15,7 @@ import { useResponsive, SIDEBAR_WIDTH, MAX_CONTENT_WIDTH } from '@/hooks/useResp
 import { useAuthStore } from '@/stores/authStore';
 import { useWineStore } from '@/stores/wineStore';
 import { useSubscriptionStore } from '@/stores/subscriptionStore';
+import { SHOW_SUBSCRIPTION_UI } from '@/config/featureFlags';
 import { WineListItem } from '@/components/wine/WineListItem';
 import { WineGridItem } from '@/components/wine/WineGridItem';
 import { SkeletonWineListItem } from '@/components/wine/SkeletonWineListItem';
@@ -100,7 +101,7 @@ export function HomeScreen() {
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{totalCount}</Text>
             <Text style={styles.statLabel}>Wines Logged</Text>
-            {!isSubscribed && totalCount >= 30 && (
+            {SHOW_SUBSCRIPTION_UI && !isSubscribed && totalCount >= 30 && (
               <Text style={styles.freeLimitHint}>Free limit reached</Text>
             )}
           </View>
@@ -125,7 +126,7 @@ export function HomeScreen() {
         )}
 
         {/* Pro Upsell */}
-        {!isSubscribed && (
+        {SHOW_SUBSCRIPTION_UI && !isSubscribed && (
           <Pressable style={styles.upsellCard} onPress={() => navigation.navigate('Settings')}>
             <View>
               <Text style={styles.upsellTitle}>Unlock Wine Intelligence</Text>

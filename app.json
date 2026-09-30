@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.replit.pouracrossamerica",
-      "buildNumber": "52",
+      "buildNumber": "53",
       "appleTeamId": "4JZRW3MPP2",
       "infoPlist": {
         "NSCameraUsageDescription": "Pour Across America uses your camera to photograph wine labels.",

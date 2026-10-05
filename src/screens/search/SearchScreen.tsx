@@ -18,8 +18,6 @@ import { WineListItem } from '@/components/wine/WineListItem';
 import { WineGridItem } from '@/components/wine/WineGridItem';
 import { useAuthStore } from '@/stores/authStore';
 import { useWineStore } from '@/stores/wineStore';
-import { useSubscriptionStore } from '@/stores/subscriptionStore';
-import { SHOW_SUBSCRIPTION_UI } from '@/config/featureFlags';
 import { WineEntry, COUNTRIES_AND_REGIONS } from '@/types';
 import { MainStackParamList } from '@/navigation/types';
 
@@ -41,7 +39,6 @@ export function SearchScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const { user } = useAuthStore();
   const { entries, totalCount, searchResults, searching, hasMore, loadingMore, search, clearSearch, loadEntries, loadMore } = useWineStore();
-  const { isSubscribed } = useSubscriptionStore();
 
   const [query, setQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('Recent');
@@ -51,7 +48,7 @@ export function SearchScreen() {
   const [debounceTimer, setDebounceTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (user) loadEntries(user.id, isSubscribed);
+    if (user) loadEntries(user.id);
   }, [user]);
 
   const runSearch = useCallback(
@@ -152,13 +149,6 @@ export function SearchScreen() {
             </View>
           </View>
 
-          {SHOW_SUBSCRIPTION_UI && !isSubscribed && (
-            <View style={styles.paywallHint}>
-              <Text style={styles.paywallText}>
-                🔒 Upgrade to Pro for compound search (price range, terroir, tags…)
-              </Text>
-            </View>
-          )}
         </View>
       )}
 
@@ -208,7 +198,7 @@ export function SearchScreen() {
           onEndReached={() => {
             const isSearching = !!(query || filterCountry || filterMinScore);
             if (!isSearching && hasMore && user) {
-              loadMore(user.id, isSubscribed);
+              loadMore(user.id);
             }
           }}
           ListEmptyComponent={
@@ -324,17 +314,6 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.dmSansRegular,
     fontSize: 14,
     color: Colors.inkMid,
-  },
-  paywallHint: {
-    backgroundColor: Colors.blueLight,
-    borderRadius: Radius.sm,
-    padding: Spacing.sm,
-  },
-  paywallText: {
-    fontFamily: Fonts.dmSans,
-    fontSize: 12,
-    color: Colors.blue,
-    lineHeight: 17,
   },
   sortRow: {
     flexDirection: 'row',

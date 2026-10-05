@@ -399,7 +399,6 @@ export interface UserProfile {
   display_name: string | null;
   avatar_url: string | null;
   is_creator: boolean;
-  subscription_tier: 'free' | 'pro';
   user_role: UserRole;
   sommelier_cert_url: string | null;
   sommelier_status: SommelierStatus | null;

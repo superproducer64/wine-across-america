@@ -4,7 +4,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, Alert, Linking, View } from 'react-native';
 import { supabase, setRecoverySession } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
-import { useSubscriptionStore } from '@/stores/subscriptionStore';
 import { usePasswordRecoveryStore } from '@/stores/passwordRecoveryStore';
 import { useInviteStore } from '@/stores/inviteStore';
 import { parseRecoveryParamsFromUrl, parseInviteCodeFromUrl } from '@/lib/deepLink';
@@ -22,15 +21,11 @@ export function RootNavigator() {
   const { pendingCode: pendingInviteCode, setPendingCode: setPendingInviteCode } = useInviteStore();
   const navigationRef = useNavigationContainerRef<RootStackParamList>();
   usePushNotifications();
-  const { checkSubscription } = useSubscriptionStore();
 
   useEffect(() => {
     // Bootstrap auth session from stored token
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session?.user) {
-        checkSubscription(session.user.id);
-      }
     }).catch((err) => {
       console.error('[RootNavigator] getSession failed:', err);
       setSession(null);
@@ -40,9 +35,6 @@ export function RootNavigator() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
-        if (session?.user) {
-          checkSubscription(session.user.id);
-        }
       }
     );
 

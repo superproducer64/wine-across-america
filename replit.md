@@ -36,7 +36,7 @@ src/
   lib/          # supabase.ts client setup
   navigation/   # RootNavigator, AuthNavigator, MainNavigator (adaptive sidebar)
   screens/      # Auth, Home, Search, Detail, Entry, Settings, Comparison
-  stores/       # Zustand stores: auth, wine, subscription, entryDrafts
+  stores/       # Zustand stores: auth, wine, entryDrafts
   theme/        # Colors, Typography, Spacing
   types/        # TypeScript interfaces
   utils/        # Helper functions
@@ -57,15 +57,12 @@ The app runs in web mode via Expo Metro bundler on port 5000.
 Copy `.env.example` to `.env` and fill in:
 - `EXPO_PUBLIC_SUPABASE_URL` - Your Supabase project URL
 - `EXPO_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anon/public key
-- `EXPO_PUBLIC_REVENUECAT_API_KEY_IOS` - RevenueCat iOS API key
-- `EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID` - RevenueCat Android API key
 
 ## Key Features
 
 - Multi-step wine entry flow (Basics, Structure, Aromas, Technical Score, Notes)
 - Technical scoring algorithm based on balance, intensity, complexity, finish, typicity
 - Aroma profiling with radar chart visualization
-- Pro tier subscription support (30 entry free limit)
 - Offline-ready auth with secure token persistence
 
 ## Two-Tier User System

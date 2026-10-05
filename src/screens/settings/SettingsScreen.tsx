@@ -19,8 +19,6 @@ import { Colors, Fonts, Spacing, Radius } from '@/theme';
 import { useResponsive, SIDEBAR_WIDTH, MAX_CONTENT_WIDTH } from '@/hooks/useResponsive';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/authStore';
-import { useSubscriptionStore } from '@/stores/subscriptionStore';
-import { SHOW_SUBSCRIPTION_UI } from '@/config/featureFlags';
 import { SommelierCertUpload } from '@/components/auth/SommelierCertUpload';
 import {
   uploadSommelierCert,
@@ -36,12 +34,10 @@ import { MainStackParamList } from '@/navigation/types';
 export function SettingsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const { user, profile, signOut, loadProfile, setProfile } = useAuthStore();
-  const { isSubscribed } = useSubscriptionStore();
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
-  const [showUpgradeInfo, setShowUpgradeInfo] = useState(false);
   const [showSommelierApply, setShowSommelierApply] = useState(false);
   const [certDataUrl, setCertDataUrl] = useState<string | null>(null);
   const [certMime, setCertMime] = useState<string | null>(null);
@@ -425,81 +421,6 @@ export function SettingsScreen() {
           </View>
         )}
 
-        {/* Subscription */}
-        {SHOW_SUBSCRIPTION_UI && (
-          <View style={styles.subsCard}>
-            <View style={styles.subsHeader}>
-              <View>
-                <Text style={styles.subsLabel}>Current Plan</Text>
-                <Text style={styles.subsTier}>
-                  {isSubscribed ? '✨ Intelligence (Pro)' : '📓 Notebook (Free)'}
-                </Text>
-              </View>
-              {isSubscribed && (
-                <View style={styles.proBadge}>
-                  <Text style={styles.proBadgeText}>PRO</Text>
-                </View>
-              )}
-            </View>
-
-            {!isSubscribed && (
-              <View style={styles.upgradeBlock}>
-                <Text style={styles.upgradeTitle}>Upgrade to Intelligence</Text>
-                <Text style={styles.upgradeDesc}>
-                  Full history • Taste fingerprint • Score vs. price chart{'\n'}
-                  Compound search • Creator database • Recommendations
-                </Text>
-                {showUpgradeInfo ? (
-                  <View style={styles.upgradeInfoBox}>
-                    <Text style={styles.upgradeInfoText}>
-                      Pour Across America Pro — $9.99/month or $79/year.{'\n\n'}
-                      Subscription purchase will be available after App Store review.
-                    </Text>
-                    <Pressable onPress={() => setShowUpgradeInfo(false)}>
-                      <Text style={styles.upgradeInfoClose}>Dismiss</Text>
-                    </Pressable>
-                  </View>
-                ) : (
-                  <Button
-                    label="Upgrade — $9.99/mo"
-                    onPress={() => setShowUpgradeInfo(true)}
-                    style={styles.upgradeBtn}
-                    size="md"
-                  />
-                )}
-                <Text style={styles.upgradeAlt}>or $79/year (save 34%)</Text>
-              </View>
-            )}
-
-            {isSubscribed && (
-              <View style={styles.restoreBlock}>
-                <Text style={styles.restoreText}>Restore purchase: checking your purchases…</Text>
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* Free tier details */}
-        {SHOW_SUBSCRIPTION_UI && !isSubscribed && (
-          <View style={styles.freeDetails}>
-            <Text style={styles.freeDetailsTitle}>Free tier includes:</Text>
-            {[
-              'Unlimited wine entries',
-              'Full scoring (Structure Wheel + Technical Score)',
-              'Aroma wheel input',
-              'Basic search (keyword + 3 filters)',
-              'Last 30 wines browsable',
-              'Basic analytics',
-              'One shareable tasting card',
-            ].map((item) => (
-              <View key={item} style={styles.freeItem}>
-                <Text style={styles.freeItemDot}>·</Text>
-                <Text style={styles.freeItemText}>{item}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-
         {/* Admin Panel — visible to is_creator users only */}
         {profile?.is_creator && (
           <Pressable
@@ -583,12 +504,6 @@ export function SettingsScreen() {
                 ))}
               </View>
 
-              {isSubscribed && (
-                <Text style={styles.subscriptionWarning}>
-                  This does not cancel your subscription. Manage or cancel it separately in
-                  iPhone Settings → [Your Name] → Subscriptions.
-                </Text>
-              )}
 
               <Text style={styles.deleteTypeLabel}>Type DELETE to confirm</Text>
               <TextInput
@@ -898,126 +813,6 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 20,
   },
-  subsCard: {
-    backgroundColor: Colors.ink,
-    borderRadius: Radius.md,
-    padding: Spacing.lg,
-    borderWidth: 0.5,
-    borderColor: Colors.borderStrong,
-    gap: Spacing.lg,
-  },
-  subsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  subsLabel: {
-    fontFamily: Fonts.dmSans,
-    fontSize: 11,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: 'rgba(255,255,255,0.4)',
-    marginBottom: 3,
-  },
-  subsTier: {
-    fontFamily: Fonts.playfair,
-    fontSize: 17,
-    color: Colors.gold,
-  },
-  proBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: Radius.full,
-    borderWidth: 0.5,
-    borderColor: Colors.gold,
-  },
-  proBadgeText: {
-    fontFamily: Fonts.dmSansMedium,
-    fontSize: 11,
-    color: Colors.gold,
-    letterSpacing: 0.5,
-  },
-  upgradeBlock: {
-    gap: Spacing.sm,
-  },
-  upgradeTitle: {
-    fontFamily: Fonts.playfair,
-    fontSize: 16,
-    color: Colors.white,
-  },
-  upgradeDesc: {
-    fontFamily: Fonts.dmSans,
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.45)',
-    lineHeight: 18,
-  },
-  upgradeBtn: {
-    width: '100%',
-  },
-  upgradeAlt: {
-    fontFamily: Fonts.dmSans,
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.3)',
-    textAlign: 'center',
-  },
-  upgradeInfoBox: {
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    borderRadius: Radius.sm,
-    padding: Spacing.md,
-    gap: Spacing.sm,
-  },
-  upgradeInfoText: {
-    fontFamily: Fonts.dmSans,
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.6)',
-    lineHeight: 19,
-  },
-  upgradeInfoClose: {
-    fontFamily: Fonts.dmSansMedium,
-    fontSize: 13,
-    color: Colors.gold,
-    textAlign: 'right',
-  },
-  restoreBlock: {
-    paddingTop: Spacing.sm,
-  },
-  restoreText: {
-    fontFamily: Fonts.dmSans,
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.4)',
-    textAlign: 'center',
-  },
-  freeDetails: {
-    backgroundColor: Colors.surfaceAlt,
-    borderRadius: Radius.md,
-    padding: Spacing.lg,
-    borderWidth: 0.5,
-    borderColor: Colors.border,
-    gap: 6,
-  },
-  freeDetailsTitle: {
-    fontFamily: Fonts.dmSansMedium,
-    fontSize: 13,
-    color: Colors.inkMid,
-    marginBottom: 4,
-  },
-  freeItem: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'flex-start',
-  },
-  freeItemDot: {
-    color: Colors.gold,
-    fontSize: 16,
-    lineHeight: 20,
-  },
-  freeItemText: {
-    fontFamily: Fonts.dmSans,
-    fontSize: 13,
-    color: Colors.inkMuted,
-    flex: 1,
-    lineHeight: 20,
-  },
   infoSection: {
     gap: Spacing.sm,
   },
@@ -1193,15 +988,6 @@ const styles = StyleSheet.create({
   deleteListItem: { flexDirection: 'row', gap: 8 },
   deleteListDot: { color: Colors.red, fontSize: 16, lineHeight: 20 },
   deleteListText: { fontFamily: Fonts.dmSans, fontSize: 13, color: Colors.ink, flex: 1 },
-  subscriptionWarning: {
-    fontFamily: Fonts.dmSans,
-    fontSize: 12,
-    color: '#996800',
-    backgroundColor: 'rgba(255,193,7,0.1)',
-    padding: Spacing.sm,
-    borderRadius: Radius.sm,
-    lineHeight: 17,
-  },
   deleteTypeLabel: {
     fontFamily: Fonts.dmSansMedium,
     fontSize: 12,

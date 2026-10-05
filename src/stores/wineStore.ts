@@ -9,7 +9,6 @@ import {
   searchWineEntries,
 } from '@/lib/supabase';
 
-const FREE_TIER_LIMIT = 30;
 const PAGE_SIZE = 20;
 
 interface WineStore {
@@ -24,8 +23,8 @@ interface WineStore {
   searchResults: WineEntry[];
   searching: boolean;
 
-  loadEntries: (userId: string, isPro: boolean) => Promise<void>;
-  loadMore: (userId: string, isPro: boolean) => Promise<void>;
+  loadEntries: (userId: string) => Promise<void>;
+  loadMore: (userId: string) => Promise<void>;
   addEntry: (userId: string, draft: WineEntryDraft) => Promise<WineEntry | null>;
   updateEntry: (id: string, updates: Partial<WineEntryDraft>) => Promise<void>;
   removeEntry: (id: string) => Promise<void>;
@@ -46,7 +45,7 @@ export const useWineStore = create<WineStore>((set, get) => ({
   searchResults: [],
   searching: false,
 
-  loadEntries: async (userId, _isPro) => {
+  loadEntries: async (userId) => {
     set({ loading: true, currentPage: 0, loadError: null });
     const { data, error, count } = await listWineEntries(userId, { limit: PAGE_SIZE, offset: 0 });
     if (!error && data) {
@@ -67,7 +66,7 @@ export const useWineStore = create<WineStore>((set, get) => ({
     }
   },
 
-  loadMore: async (userId, isPro) => {
+  loadMore: async (userId) => {
     const { loadingMore, hasMore, currentPage, entries } = get();
     if (loadingMore || !hasMore) return;
     set({ loadingMore: true });

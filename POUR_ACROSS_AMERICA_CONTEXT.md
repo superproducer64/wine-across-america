@@ -192,7 +192,6 @@ interface UserProfile {
   display_name: string | null;
   avatar_url: string | null;
   is_creator: boolean;         // gates admin panel access (set via SQL)
-  subscription_tier: 'free' | 'pro';
   user_role: 'enthusiast' | 'sommelier';
   sommelier_cert_url: string | null;
   sommelier_status: 'pending' | 'approved' | 'rejected' | null;
@@ -357,9 +356,6 @@ INSERT WITH CHECK (true)  -- "user_profiles_insert"
   setStep, reset, loadForEdit }
 ```
 
-### `subscriptionStore` (`src/stores/subscriptionStore.ts`)
-- Tracks `isPro: boolean`
-- `checkSubscription(userId)` reads `subscription_tier` from profile
 
 ---
 
@@ -558,7 +554,6 @@ src/
     authStore.ts                 — session, profile, retry logic
     wineStore.ts                 — CRUD, pagination, search
     entryDraftStore.ts           — 5-step draft state machine
-    subscriptionStore.ts         — pro/free tier
   screens/
     auth/LoginScreen.tsx         — email login + Apple Sign In (iOS)
     auth/SignupScreen.tsx        — email signup + cert upload for sommelier

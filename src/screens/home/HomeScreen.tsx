@@ -14,8 +14,6 @@ import { Colors, Fonts, Spacing, Radius } from '@/theme';
 import { useResponsive, SIDEBAR_WIDTH, MAX_CONTENT_WIDTH } from '@/hooks/useResponsive';
 import { useAuthStore } from '@/stores/authStore';
 import { useWineStore } from '@/stores/wineStore';
-import { useSubscriptionStore } from '@/stores/subscriptionStore';
-import { SHOW_SUBSCRIPTION_UI } from '@/config/featureFlags';
 import { WineListItem } from '@/components/wine/WineListItem';
 import { WineGridItem } from '@/components/wine/WineGridItem';
 import { SkeletonWineListItem } from '@/components/wine/SkeletonWineListItem';
@@ -35,11 +33,10 @@ export function HomeScreen() {
   const navigation = useNavigation<HomeNavProp>();
   const { user, profile } = useAuthStore();
   const { entries, totalCount, loading, loadingMore, hasMore, loadError, loadEntries, loadMore } = useWineStore();
-  const { isSubscribed } = useSubscriptionStore();
 
   useEffect(() => {
     if (!user) return;
-    loadEntries(user.id, isSubscribed);
+    loadEntries(user.id);
   }, [user]);
 
   const firstName = profile?.display_name?.split(' ')[0] ?? 'there';
@@ -101,9 +98,6 @@ export function HomeScreen() {
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{totalCount}</Text>
             <Text style={styles.statLabel}>Wines Logged</Text>
-            {SHOW_SUBSCRIPTION_UI && !isSubscribed && totalCount >= 30 && (
-              <Text style={styles.freeLimitHint}>Free limit reached</Text>
-            )}
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{avgScore}</Text>
@@ -123,21 +117,6 @@ export function HomeScreen() {
               <Text style={styles.grapeName}>{topGrape}</Text>
             </View>
           </View>
-        )}
-
-        {/* Pro Upsell */}
-        {SHOW_SUBSCRIPTION_UI && !isSubscribed && (
-          <Pressable style={styles.upsellCard} onPress={() => navigation.navigate('Settings')}>
-            <View>
-              <Text style={styles.upsellTitle}>Unlock Wine Intelligence</Text>
-              <Text style={styles.upsellBody}>
-                Taste fingerprint, score-vs-price charts, compound search, and more.
-              </Text>
-            </View>
-            <View style={styles.upsellBadge}>
-              <Text style={styles.upsellBadgeText}>PRO</Text>
-            </View>
-          </Pressable>
         )}
 
         {/* Recent Wines */}
@@ -174,7 +153,7 @@ export function HomeScreen() {
                   <Text style={styles.emptyBody}>{loadError}</Text>
                   <Pressable
                     style={styles.retryBtn}
-                    onPress={() => user && loadEntries(user.id, isSubscribed)}
+                    onPress={() => user && loadEntries(user.id)}
                   >
                     <Text style={styles.retryBtnText}>Try again</Text>
                   </Pressable>
@@ -204,7 +183,7 @@ export function HomeScreen() {
             {hasMore && (
               <Pressable
                 style={styles.loadMoreBtn}
-                onPress={() => user && loadMore(user.id, isSubscribed)}
+                onPress={() => user && loadMore(user.id)}
                 disabled={loadingMore}
               >
                 {loadingMore ? (
@@ -288,13 +267,6 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.45)',
     textAlign: 'center',
   },
-  freeLimitHint: {
-    fontFamily: Fonts.dmSans,
-    fontSize: 9,
-    color: Colors.red,
-    marginTop: 2,
-    textAlign: 'center',
-  },
   grapeCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -318,43 +290,6 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.playfair,
     fontSize: 17,
     color: Colors.ink,
-  },
-  upsellCard: {
-    backgroundColor: Colors.ink,
-    borderRadius: Radius.md,
-    padding: Spacing.lg,
-    borderWidth: 0.5,
-    borderColor: Colors.borderStrong,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.xl,
-  },
-  upsellTitle: {
-    fontFamily: Fonts.playfair,
-    fontSize: 16,
-    color: Colors.gold,
-    marginBottom: 3,
-  },
-  upsellBody: {
-    fontFamily: Fonts.dmSans,
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.45)',
-    maxWidth: 240,
-    lineHeight: 17,
-  },
-  upsellBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: Radius.full,
-    borderWidth: 0.5,
-    borderColor: Colors.gold,
-  },
-  upsellBadgeText: {
-    fontFamily: Fonts.dmSansMedium,
-    fontSize: 11,
-    color: Colors.gold,
-    letterSpacing: 0.5,
   },
   sectionHeader: {
     flexDirection: 'row',

@@ -144,16 +144,12 @@ export function InsightsScreen() {
               </View>
 
               <View>
-                <SectionTitle>Social & Monetization</SectionTitle>
+                <SectionTitle>Social</SectionTitle>
                 <View style={styles.statsGrid}>
                   <StatCard
                     label="Wines Shared"
                     value={String(insights.totalShares)}
                     hint={`${pct(insights.sharesSeen, insights.totalShares)} opened by recipient`}
-                  />
-                  <StatCard
-                    label="Pro Subscribers"
-                    value={`${insights.proUsers} (${pct(insights.proUsers, insights.totalUsers)})`}
                   />
                   <StatCard
                     label="Approved Sommeliers"

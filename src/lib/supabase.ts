@@ -121,7 +121,6 @@ export async function signInWithApple(
         email: data.user.email ?? '',
         display_name: displayName ?? null,
         user_role: 'enthusiast',
-        subscription_tier: 'free',
         is_creator: false,
       });
       if (upsertError) {
@@ -364,7 +363,6 @@ export type UsageInsights = {
   entriesWithNotes: number;
   entriesWithTerroir: number;
   customGrapeVarietiesAdded: number;
-  proUsers: number;
   sommelierApproved: number;
   totalShares: number;
   sharesSeen: number;
@@ -390,7 +388,7 @@ export async function fetchUsageInsights(): Promise<{ data: UsageInsights | null
       sharesSeen,
       signupsLast30,
     ] = await Promise.all([
-      supabase.from('user_profiles').select('id, user_id:id, subscription_tier, user_role, sommelier_status', { count: 'exact' }),
+      supabase.from('user_profiles').select('id, user_id:id, user_role, sommelier_status', { count: 'exact' }),
       supabase.from('wine_entries').select('user_id', { count: 'exact' }),
       supabase.from('wine_entries').select('id', { count: 'exact', head: true }).gte('created_at', since7d),
       supabase.from('wine_entries').select('id', { count: 'exact', head: true }).gte('created_at', since30d),
@@ -417,7 +415,6 @@ export async function fetchUsageInsights(): Promise<{ data: UsageInsights | null
     const totalEntries = entries.count ?? 0;
     const uniqueActiveUsers = new Set((entries.data ?? []).map((e: { user_id: string }) => e.user_id));
     const usersWithAtLeastOneEntry = uniqueActiveUsers.size;
-    const proUsers = (profiles.data ?? []).filter((p: { subscription_tier: string }) => p.subscription_tier === 'pro').length;
     const sommelierApproved = (profiles.data ?? []).filter(
       (p: { user_role: string; sommelier_status: string | null }) =>
         p.user_role === 'sommelier' && p.sommelier_status === 'approved'
@@ -435,7 +432,6 @@ export async function fetchUsageInsights(): Promise<{ data: UsageInsights | null
         entriesWithNotes: entriesWithNotes.count ?? 0,
         entriesWithTerroir: entriesWithTerroir.count ?? 0,
         customGrapeVarietiesAdded: customGrapes.count ?? 0,
-        proUsers,
         sommelierApproved,
         totalShares: shares.count ?? 0,
         sharesSeen: sharesSeen.count ?? 0,

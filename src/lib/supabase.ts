@@ -567,7 +567,6 @@ export async function submitSommelierApplication(
   const { error } = await supabase
     .from('user_profiles')
     .update({
-      user_role: 'sommelier',
       sommelier_cert_url: certUrl,
       sommelier_status: 'pending',
     })
@@ -593,17 +592,14 @@ export async function notifyAdminsOfNewApplication(
   applicantName: string | null
 ): Promise<void> {
   try {
-    const { data: admins } = await supabase
-      .from('user_profiles')
-      .select('push_token')
-      .eq('is_creator', true)
-      .not('push_token', 'is', null);
+    // RPC (migration 024): applicants can't read other users' user_profiles rows.
+    const { data: admins } = await supabase.rpc('get_admin_push_tokens');
 
     if (!admins || admins.length === 0) return;
 
     const messages = admins
-      .filter((a) => a.push_token)
-      .map((a) => ({
+      .filter((a: { push_token: string | null }) => a.push_token)
+      .map((a: { push_token: string }) => ({
         to: a.push_token,
         title: '🎓 New Sommelier Application',
         body: applicantName
@@ -874,7 +870,7 @@ export async function fetchConversations(
 
   const otherIds = [...byOther.keys()];
   const profiles = otherIds.length
-    ? await supabase.from('user_profiles').select('id, display_name, avatar_url').in('id', otherIds)
+    ? await supabase.from('member_profiles').select('id, display_name, avatar_url').in('id', otherIds)
     : { data: [] as { id: string; display_name: string | null; avatar_url: string | null }[] };
   const profileMap = new Map((profiles.data ?? []).map((p) => [p.id, p]));
 

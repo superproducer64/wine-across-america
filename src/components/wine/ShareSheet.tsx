@@ -94,10 +94,10 @@ export function ShareSheet({ visible, onClose, entry, onShareText, onShareWithMe
         </Pressable>
       </Pressable>
 
-      {/* Off-screen capture target — the original wine card, unmodified. */}
+      {/* Off-screen capture target — the combined share card. */}
       <View style={styles.offscreen} pointerEvents="none">
         <View ref={cardRef} collapsable={false} style={{ width: CAPTURE_WIDTH }}>
-          <VivinoStyleCard entry={entry} />
+          <VivinoStyleCard entry={entry} variant="share" />
         </View>
       </View>
     </Modal>

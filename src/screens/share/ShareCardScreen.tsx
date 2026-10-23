@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Sharing from 'expo-sharing';
+import { shareImageFile } from '@/utils/shareImage';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Colors, Fonts, Spacing, Radius } from '@/theme';
 import { VivinoStyleCard } from '@/components/wine/VivinoStyleCard';
@@ -96,12 +96,11 @@ export function ShareCardScreen({ route, navigation }: Props) {
     if (!cardUri) return;
     setExternalError('');
     try {
-      const available = await Sharing.isAvailableAsync();
-      if (!available) {
+      const shared = await shareImageFile(cardUri);
+      if (!shared) {
         setExternalError('Sharing is not available on this device.');
         return;
       }
-      await Sharing.shareAsync(cardUri, { mimeType: 'image/png', UTI: 'public.png' });
     } catch (err) {
       // expo-sharing throws for both user-cancellation and genuine failures,
       // and there's no reliable cross-platform way to tell them apart — but a
@@ -160,7 +159,7 @@ export function ShareCardScreen({ route, navigation }: Props) {
       {/* Off-screen instance used only as the capture target — same card style used for "Share on Social". */}
       <View style={styles.offscreen} pointerEvents="none">
         <View ref={cardRef} collapsable={false} style={{ width: CAPTURE_WIDTH }}>
-          <VivinoStyleCard key={entry.id} entry={entry} />
+          <VivinoStyleCard key={entry.id} entry={entry} variant="share" />
         </View>
       </View>
 

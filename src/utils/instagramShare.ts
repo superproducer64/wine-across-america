@@ -1,6 +1,6 @@
 import { Platform, Linking } from 'react-native';
 import Share, { Social } from 'react-native-share';
-import * as Sharing from 'expo-sharing';
+import { shareImageFile } from '@/utils/shareImage';
 
 async function isInstagramAvailable(): Promise<boolean> {
   if (Platform.OS === 'ios') {
@@ -51,8 +51,5 @@ export async function shareToInstagramStoriesOrFallback(imageUri: string): Promi
     }
   }
 
-  const sharingAvailable = await Sharing.isAvailableAsync();
-  if (!sharingAvailable) return false;
-  await Sharing.shareAsync(imageUri, { mimeType: 'image/png', UTI: 'public.png' });
-  return true;
+  return shareImageFile(imageUri);
 }

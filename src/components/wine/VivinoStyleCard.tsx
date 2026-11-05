@@ -7,14 +7,9 @@ import { Colors, Fonts, Radius, Spacing, Shadows } from '@/theme';
 import { WineEntry } from '@/types';
 import { getFoodPairings } from '@/utils/foodPairings';
 import { getCurrencySymbol } from '@/utils/currency';
-import { RadarChart } from '@/components/charts/RadarChart';
-import { AromaDonutChart } from '@/components/charts/AromaDonutChart';
 
 interface Props {
   entry: WineEntry;
-  // 'share' is the static export used for captured share images: adds the
-  // radar + aroma wheel and verdict line, and drops tap-for-info UI.
-  variant?: 'detail' | 'share';
 }
 
 // ─── Star Rating ─────────────────────────────────────────────────────────────
@@ -205,8 +200,7 @@ function Divider() {
 
 // ─── Main Card ───────────────────────────────────────────────────────────────
 
-export function VivinoStyleCard({ entry, variant = 'detail' }: Props) {
-  const isShare = variant === 'share';
+export function VivinoStyleCard({ entry }: Props) {
   const score = entry.technical_score ?? 0;
   const [activeAxis, setActiveAxis] = useState<{ title: string; description: string } | null>(null);
 
@@ -231,13 +225,6 @@ export function VivinoStyleCard({ entry, variant = 'detail' }: Props) {
   const priceDisplay = latestPrice && latestPrice.amount > 0
     ? `${getCurrencySymbol(latestPrice.currency)}${latestPrice.amount.toFixed(2)}`
     : null;
-
-  // Share-variant extras
-  const hasRadar = entry.acidity != null && entry.body != null && entry.tannin != null;
-  const hasAromas = (entry.aromas_l1?.length ?? 0) > 0;
-  const chartSize = hasRadar && hasAromas ? 128 : 170;
-  const isBestValue = !!entry.want_to_buy && score >= 80;
-  const showVerdict = isShare && entry.want_to_buy != null;
 
   // Grape blends — prefer detailed blend data, fall back to plain grapes array
   const hasBlends = entry.grape_blends && entry.grape_blends.length > 0;
@@ -315,56 +302,17 @@ export function VivinoStyleCard({ entry, variant = 'detail' }: Props) {
 
         <Divider />
 
-        {/* Profile radar + aroma wheel (share export only, static) */}
-        {isShare && (hasRadar || hasAromas) && (
-          <>
-            <View style={[styles.section, styles.chartsRow]}>
-              {hasRadar && (
-                <View style={styles.chartCol}>
-                  <SectionHeader label="Profile" />
-                  <RadarChart
-                    scores={{
-                      sweetness: entry.sweetness ?? 5,
-                      acidity: entry.acidity,
-                      body: entry.body,
-                      alcohol: entry.alcohol,
-                      tannin: entry.tannin,
-                      intensity: entry.intensity,
-                      finish_length: entry.finish_length ?? 5,
-                    }}
-                    size={chartSize}
-                    color={Colors.ink}
-                  />
-                </View>
-              )}
-              {hasAromas && (
-                <View style={styles.chartCol}>
-                  <SectionHeader label="Aroma Profile" />
-                  <AromaDonutChart
-                    aromasL1={entry.aromas_l1}
-                    aromasL2={entry.aromas_l2}
-                    size={chartSize}
-                    showLegend={false}
-                  />
-                </View>
-              )}
-            </View>
-            <Divider />
-          </>
-        )}
-
         {/* Style Profile */}
         <View style={styles.section}>
           <SectionHeader label="Style" />
           <View style={{ gap: 12 }}>
             {/* sweetness is null on entries saved before migration 006 — omit the row rather than guess */}
             {entry.sweetness != null && (
-              <AxisSlider left="Dry" right="Sweet" value={norm(entry.sweetness)} onPress={isShare ? undefined : () => openAxis('Dry', 'Sweet')} />
+              <AxisSlider left="Dry" right="Sweet" value={norm(entry.sweetness)} onPress={() => openAxis('Dry', 'Sweet')} />
             )}
-            <AxisSlider left="Light Body" right="Full Body" value={norm(entry.body)} onPress={isShare ? undefined : () => openAxis('Light Body', 'Full Body')} />
-            <AxisSlider left="Soft" right="Tannic" value={norm(entry.tannin)} onPress={isShare ? undefined : () => openAxis('Soft', 'Tannic')} />
-            <AxisSlider left="Low Acid" right="High Acid" value={norm(entry.acidity)} onPress={isShare ? undefined : () => openAxis('Low Acid', 'High Acid')} />
-          </View>
+            <AxisSlider left="Light Body" right="Full Body" value={norm(entry.body)} onPress={() => openAxis('Light Body', 'Full Body')} />
+            <AxisSlider left="Soft" right="Tannic" value={norm(entry.tannin)} onPress={() => openAxis('Soft', 'Tannic')} />
+            <AxisSlider left="Low Acid" right="High Acid" value={norm(entry.acidity)} onPress={() => openAxis('Low Acid', 'High Acid')} />          </View>
         </View>
 
         <InfoPopover
@@ -444,26 +392,8 @@ export function VivinoStyleCard({ entry, variant = 'detail' }: Props) {
           </>
         )}
 
-        {/* Verdict (share export only) */}
-        {showVerdict && (
-          <>
-            <Divider />
-            <View style={[styles.section, styles.verdictRow]}>
-              {isBestValue && (
-                <View style={styles.bestValueBadge}>
-                  <Text style={styles.bestValueText}>Best Value ✓</Text>
-                </View>
-              )}
-              <Text style={styles.verdictText}>
-                Would I buy again?{' '}
-                <Text style={styles.verdictAnswer}>{entry.want_to_buy ? '✓ YES' : '✗ NO'}</Text>
-              </Text>
-            </View>
-          </>
-        )}
-
-        {/* Flags (the buy flag is covered by the verdict line in the share export) */}
-        {(entry.want_another_glass || (entry.want_to_buy && !isShare)) && (
+        {/* Flags */}
+        {(entry.want_another_glass || entry.want_to_buy) && (
           <>
             <Divider />
             <View style={[styles.section, styles.flagsRow]}>
@@ -473,7 +403,7 @@ export function VivinoStyleCard({ entry, variant = 'detail' }: Props) {
                   <Text style={styles.flagText}>Would have another glass</Text>
                 </View>
               )}
-              {entry.want_to_buy && !isShare && (
+              {entry.want_to_buy && (
                 <View style={styles.flag}>
                   <Text style={styles.flagEmoji}>🛒</Text>
                   <Text style={styles.flagText}>Would buy a bottle</Text>
@@ -624,43 +554,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
     paddingTop: Spacing.lg,
     paddingBottom: 0,
-  },
-
-  // Share-variant charts + verdict
-  chartsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  chartCol: {
-    alignItems: 'center',
-    flexShrink: 1,
-  },
-  verdictRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-  },
-  bestValueBadge: {
-    backgroundColor: Colors.ink,
-    borderRadius: Radius.sm,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  bestValueText: {
-    fontFamily: Fonts.dmSansMedium,
-    fontSize: 10,
-    color: Colors.white,
-    letterSpacing: 0.3,
-  },
-  verdictText: {
-    fontFamily: Fonts.dmSansRegular,
-    fontSize: 13,
-    color: Colors.inkMid,
-  },
-  verdictAnswer: {
-    fontFamily: Fonts.dmSansMedium,
-    color: Colors.ink,
   },
 
   // Pills

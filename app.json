@@ -2,7 +2,7 @@
   "expo": {
     "name": "Pour Across America",
     "slug": "pour-across-america",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.replit.pouracrossamerica",
-      "buildNumber": "56",
+      "buildNumber": "57",
       "appleTeamId": "4JZRW3MPP2",
       "infoPlist": {
         "NSCameraUsageDescription": "Pour Across America uses your camera to photograph wine labels.",

@@ -28,3 +28,4 @@ google-service-account.json
 # these are plain-text credentials and must never be committed
 *service-account*.json
 pour-across-america-*.json
+package-lock.json

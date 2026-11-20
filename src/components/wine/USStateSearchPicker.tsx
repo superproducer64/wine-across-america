@@ -3,7 +3,7 @@ import {
   View,
   Text,
   TextInput,
-  FlatList,
+  ScrollView,
   Pressable,
   StyleSheet,
   Keyboard,
@@ -93,23 +93,31 @@ export function USStateSearchPicker({ selected, onSelect }: Props) {
         )}
       </View>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item}
+      {/* Plain ScrollView (not FlatList): nested in the Step 1 ScrollView. */}
+      <ScrollView
         style={styles.list}
+        nestedScrollEnabled
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
-        renderItem={({ item }) => (
-          <Pressable style={styles.stateBtn} onPress={() => handleSelect(item)}>
-            <Text style={styles.stateBtnText}>{item}</Text>
-          </Pressable>
-        )}
-        ListEmptyComponent={
+      >
+        {filtered.length === 0 ? (
           <Text style={styles.empty}>No states match "{query}"</Text>
-        }
-      />
+        ) : (
+          (() => {
+            const rows: string[][] = [];
+            for (let i = 0; i < filtered.length; i += 2) rows.push(filtered.slice(i, i + 2));
+            return rows.map((row) => (
+              <View key={row[0]} style={[styles.row, { flexDirection: 'row' }]}>
+                {row.map((item) => (
+                  <Pressable key={item} style={styles.stateBtn} onPress={() => handleSelect(item)}>
+                    <Text style={styles.stateBtnText}>{item}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ));
+          })()
+        )}
+      </ScrollView>
     </View>
   );
 }

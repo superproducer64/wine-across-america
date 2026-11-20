@@ -451,7 +451,7 @@ export function WineDetailScreen({ route, navigation }: Props) {
         <VivinoStyleCard entry={entry} />
 
         {/* Custom Aroma Tags */}
-        {((entry.custom_aromas?.length ?? 0) > 0 || entry.aromas_other_note) && (
+        {((entry.custom_aromas?.length ?? 0) > 0 || !!entry.aromas_other_note) && (
           <View style={styles.customAromasBlock}>
             <Text style={styles.customAromasHeading}>Personal Flavor Notes</Text>
             {(entry.custom_aromas?.length ?? 0) > 0 && (

@@ -3,7 +3,7 @@ import {
   View,
   Text,
   TextInput,
-  FlatList,
+  ScrollView,
   Pressable,
   StyleSheet,
   Keyboard,
@@ -195,26 +195,35 @@ export function GrapeBlendInput({ value, onChange }: Props) {
       )}
 
       {/* ── Filtered suggestions ── */}
-      <FlatList
-        data={filtered.filter((g) => !selectedNames.includes(g))}
-        keyExtractor={(item) => item}
+      {/* Plain ScrollView (not FlatList): this sits inside the Step 1
+          ScrollView, and a nested VirtualizedList triggers RN's warning. */}
+      <ScrollView
         style={styles.list}
+        nestedScrollEnabled
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
-        renderItem={({ item }) => (
-          <Pressable style={styles.suggestionBtn} onPress={() => handleAdd(item)}>
-            <Text style={styles.suggestionText}>{item}</Text>
-            <Text style={styles.suggestionPlus}>＋</Text>
-          </Pressable>
-        )}
-        ListEmptyComponent={
-          query.trim() && !showCustomAdd ? (
-            <Text style={styles.empty}>All matches already added</Text>
-          ) : null
-        }
-      />
+      >
+        {(() => {
+          const items = filtered.filter((g) => !selectedNames.includes(g));
+          if (items.length === 0) {
+            return query.trim() && !showCustomAdd ? (
+              <Text style={styles.empty}>All matches already added</Text>
+            ) : null;
+          }
+          const rows: string[][] = [];
+          for (let i = 0; i < items.length; i += 2) rows.push(items.slice(i, i + 2));
+          return rows.map((row) => (
+            <View key={row[0]} style={[styles.row, { flexDirection: 'row' }]}>
+              {row.map((item) => (
+                <Pressable key={item} style={styles.suggestionBtn} onPress={() => handleAdd(item)}>
+                  <Text style={styles.suggestionText}>{item}</Text>
+                  <Text style={styles.suggestionPlus}>＋</Text>
+                </Pressable>
+              ))}
+            </View>
+          ));
+        })()}
+      </ScrollView>
     </View>
   );
 }

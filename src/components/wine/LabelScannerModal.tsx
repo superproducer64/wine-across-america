@@ -461,7 +461,7 @@ export function LabelScannerModal({ visible, onClose, onApply, userId }: Props) 
                     </View>
                   )}
                 </View>
-                {(photoUrl || backPhotoUrl) && (
+                {!!(photoUrl || backPhotoUrl) && (
                   <View style={styles.savedBadge}>
                     <Text style={styles.savedBadgeText}>📎 {backPhotoUrl ? 'Both photos saved' : 'Photo saved'}</Text>
                   </View>

@@ -15,6 +15,7 @@ Billed by the minute at $45/hr. Times are local Central (CST/CDT), 24-hour.
 | 2026-10-05 | 18:33 | 18:34 | 1 | Checked the repo for anything depending on the unused `subscription_tier` column (nothing in code or SQL). | (none) |
 | 2026-10-05 | 21:07 | 21:11 | 3 | Security audit (pre-submission): mapped every read of `user_profiles` / `user_activity_summary` in the app and the policies that expose member emails to all signed-in users. | (none) |
 | 2026-10-05 | 21:28 | 21:44 | 16 | Security fix (pre-submission): migration `024_lock_down_user_profiles.sql` removes the open read-all policy on member profiles, keeps directory and messaging working through owner-run safe views, moves admin push tokens behind a locked-down function, adds a trigger so users can no longer grant themselves admin or sommelier status, and gives the App Review demo account `paa_som` its Admin panel access. Sommelier aroma unlock now requires approved status. **Migration applied live 10/5 and verified with tests T1-T12.** | 697bf8c |
+| 2026-11-20 | 11:07 | 11:18 | 11 | Ticket 1 replacement (Aroma Wheel): new drill-down aroma picker for Step 2 (master wheel of the 14 categories with count badges, full-screen wheel per category), using the same aroma fields the wine card reads; the card wheel now labels only the aromas actually selected and drops a label rather than show unreadable text. Built on branch ticket-01b-aroma-drilldown; not yet tested on device. | 9b062a0 |
 
 ## Post-launch follow-ups
 

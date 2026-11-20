@@ -65,3 +65,79 @@ export function buildCategoryRingSlots(aromasL1: string[]): CategoryRingSlot[] {
     };
   });
 }
+
+// ─── Outer-ring (aroma) label sizing ──────────────────────────────────────────
+// Pure so the "drop the text rather than render illegible text" fallback can
+// be unit-tested without rendering SVG.
+
+// Average glyph advance for DM Sans, as a fraction of font size — used to
+// estimate a line's rendered width from character count alone.
+export const CHAR_WIDTH_RATIO = 0.56;
+
+// Minimum legible font size for outer-ring aroma labels. If a selected
+// label's tangential room would force it below this, its TEXT is dropped
+// (the wedge itself stays visible/coloured).
+export const MIN_OUTER_FONT = 5.5;
+
+// Hard-truncates a label to `maxChars`, replacing the tail with an ellipsis.
+export function truncateLabel(label: string, maxChars: number): string {
+  if (label.length <= maxChars) return label;
+  if (maxChars <= 1) return `${label.slice(0, 1)}…`;
+  return `${label.slice(0, maxChars - 1).trimEnd()}…`;
+}
+
+/**
+ * Tangential room (degrees) each slot's label may use. `flags[i]` = aroma i
+ * of a category is selected. A selected label may extend symmetrically into
+ * its unselected neighbours: all of the free run up to the category edge, but
+ * only HALF of the free run toward another selected aroma (the other half
+ * belongs to that neighbour), so two labels can never claim the same wedge.
+ * Unselected slots just return their own width.
+ */
+export function computeLabelSweeps(flags: boolean[], perNote: number, gap: number): number[] {
+  const n = flags.length;
+  return flags.map((on, i) => {
+    if (!on) return perNote;
+    const side = (dir: 1 | -1): number => {
+      let free = 0;
+      let j = i + dir;
+      while (j >= 0 && j < n && !flags[j]) { free++; j += dir; }
+      const bounded = j >= 0 && j < n; // stopped at another selected aroma
+      return bounded ? free / 2 : free;
+    };
+    const ext = Math.min(side(1), side(-1));
+    return perNote + 2 * ext * (perNote + gap);
+  });
+}
+
+/**
+ * Font size + text for one selected aroma label. Returns `text: null` when
+ * its tangential room would force the font below MIN_OUTER_FONT — the caller
+ * then draws the wedge with no label. Length-driven shrinking never drops a
+ * label; if the label is too long for the radial band it is truncated.
+ */
+export function computeOuterLabel(
+  base: number,
+  label: string,
+  sweepDeg: number,
+  radius: number,
+  radialBand: number,
+): { fontSize: number; text: string | null } {
+  let scale = 1;
+  if (label.length > 16) scale = 0.72;
+  else if (label.length > 11) scale = 0.86;
+
+  const lineHeight = base * scale * 1.15;
+  const tangentialAvailable = (sweepDeg * Math.PI / 180) * radius * 0.82;
+  if (lineHeight > tangentialAvailable) {
+    scale *= tangentialAvailable / lineHeight;
+    if (base * scale < MIN_OUTER_FONT) {
+      return { fontSize: MIN_OUTER_FONT, text: null };
+    }
+  }
+
+  const fontSize = Math.max(MIN_OUTER_FONT, base * scale);
+  const radialAvailable = radialBand * 0.86;
+  const maxChars = Math.max(3, Math.floor(radialAvailable / (fontSize * CHAR_WIDTH_RATIO)));
+  return { fontSize, text: truncateLabel(label, maxChars) };
+}

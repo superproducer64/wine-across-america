@@ -3,7 +3,9 @@ import { Animated, View, Text, StyleSheet, TouchableOpacity, PanResponder, Modal
 import Svg, { Path, Circle, Text as SvgText, G } from 'react-native-svg';
 import { AROMA_CATEGORIES, getCategorySubcategories } from '@/types';
 import { Colors, Fonts, Spacing, Radius } from '@/theme';
-import { RING_GAP as GAP, buildCategoryRingSlots } from './aromaRingLayout';
+import {
+  RING_GAP as GAP, CHAR_WIDTH_RATIO, buildCategoryRingSlots, computeOuterLabel, computeLabelSweeps,
+} from './aromaRingLayout';
 
 // ── Web-only portal overlay ──────────────────────────────────────────────────
 // Renders directly into document.body so no RN stacking-context can trap it.
@@ -187,11 +189,6 @@ function splitCategoryLabel(label: string): string[] {
   return [label];
 }
 
-// Average glyph advance for DM Sans Medium, as a fraction of font size —
-// used to estimate a line's rendered width from character count alone
-// (no font-metrics API available at layout time for SVG text).
-const CHAR_WIDTH_RATIO = 0.56;
-
 // Per-category label font size. Labels read radially (outward from center),
 // so a line's rendered LENGTH must fit the ring's radial band (catEdge -
 // holeR) — that's what `radialBand` checks below, and it's the actual
@@ -219,57 +216,6 @@ function categoryLabelFontSize(base: number, lines: string[], sweepDeg: number, 
   if (radialNeeded > radialAvailable) scale *= Math.max(radialAvailable / radialNeeded, 0.55);
 
   return Math.max(6, base * scale);
-}
-
-// Minimum legible font size for outer-ring descriptor labels. Below this,
-// shrinking further just produces illegible text, so truncation takes over
-// instead (see computeOuterLabel).
-const MIN_OUTER_FONT = 5.5;
-const MIN_OUTER_SCALE = 0.55;
-
-// Hard-truncates a label to `maxChars`, replacing the tail with an ellipsis.
-function truncateLabel(label: string, maxChars: number): string {
-  if (label.length <= maxChars) return label;
-  if (maxChars <= 1) return `${label.slice(0, 1)}…`;
-  return `${label.slice(0, maxChars - 1).trimEnd()}…`;
-}
-
-// Per-item label sizing for the outer ring, mirroring categoryLabelFontSize's
-// approach for the inner ring. Outer-ring labels are also radial/spoke text,
-// so the same axis split applies: font size (line thickness) is bound by the
-// slot's ARC width — which is now fixed per category via
-// getCategorySubcategories()'s total slot count, not by how many neighbors
-// happen to be selected — while label LENGTH is bound by the ring's radial
-// band (outerR - catEdge, constant across all categories). A category with
-// many total descriptors (e.g. Tropical Fruit) gets narrower slots and thus
-// smaller labels than one with few (e.g. Citrus), even when the same number
-// of items happen to be selected in each. If even the minimum font size
-// would overflow the radial band, the label is truncated with an ellipsis
-// rather than left to overlap or clip.
-function computeOuterLabel(
-  base: number,
-  label: string,
-  sweepDeg: number,
-  radius: number,
-  radialBand: number,
-): { fontSize: number; text: string } {
-  let scale = 1;
-  if (label.length > 16) scale = 0.72;
-  else if (label.length > 11) scale = 0.86;
-
-  const lineHeight = base * scale * 1.15;
-  const tangentialAvailable = (sweepDeg * Math.PI / 180) * radius * 0.82;
-  if (lineHeight > tangentialAvailable) {
-    scale *= Math.max(tangentialAvailable / lineHeight, MIN_OUTER_SCALE);
-  }
-
-  const fontSize = Math.max(MIN_OUTER_FONT, base * scale);
-
-  const radialAvailable = radialBand * 0.86;
-  const maxChars = Math.max(3, Math.floor(radialAvailable / (fontSize * CHAR_WIDTH_RATIO)));
-  const text = label.length > maxChars ? truncateLabel(label, maxChars) : label;
-
-  return { fontSize, text };
 }
 
 type SelectedInfo = {
@@ -347,7 +293,7 @@ export function AromaDonutChart({
 
   // Segment types — rMin/rMax enable coordinate-based hit testing
   type CatSeg   = { path: string; color: string; mid: number; sweep: number; rMin: number; rMax: number; catId: string; label: string; emoji: string; notes: string[] };
-  type ItemSeg  = { path: string; color: string; mid: number; sweep: number; rMin: number; rMax: number; note: string; catId: string };
+  type ItemSeg  = { path: string; color: string; mid: number; sweep: number; labelSweep: number; selected: boolean; rMin: number; rMax: number; note: string; catId: string };
 
   const catSegs: CatSeg[] = [];
   const itemSegs: ItemSeg[] = [];
@@ -371,25 +317,32 @@ export function AromaDonutChart({
     if (showItems && cd.selected) {
       // Fixed, ordered list of every descriptor this category can possibly
       // have — the outer ring always divides into this many slots, not
-      // however many happen to be selected. Unselected slots simply don't
-      // get a segment pushed (no fill, no border), but still consume their
-      // fixed-width share of the arc via nAngle below.
+      // however many happen to be selected. EVERY slot draws its wedge in the
+      // category's color (so the wheel reads as a full wheel), but only the
+      // aromas actually selected on this wine are emphasised, tappable and
+      // labelled — unselected wedges stay a pale, label-less tint.
       const allSlots = getCategorySubcategories(cd.cat, isSommelierEntry);
       const noteSpan = cd.sweep - GAP * allSlots.length;
       const perNote = noteSpan / allSlots.length;
+      const flags = allSlots.map(note => cd.notes.includes(note));
+      // A selected label may borrow room from unselected neighbours.
+      const labelSweeps = computeLabelSweeps(flags, perNote, GAP);
       let nAngle = cStart;
       allSlots.forEach((note, si) => {
-        if (cd.notes.includes(note)) {
-          itemSegs.push({
-            path: arcPath(cx, cy, outerR, catEdge + 1, nAngle, nAngle + perNote),
-            color: si % 2 === 0 ? lightenHex(cd.color, 0.30) : lightenHex(cd.color, 0.16),
-            mid: nAngle + perNote / 2,
-            sweep: perNote,
-            rMin: catEdge + 1, rMax: outerR,
-            note,
-            catId: cd.cat.id,
-          });
-        }
+        const on = flags[si];
+        itemSegs.push({
+          path: arcPath(cx, cy, outerR, catEdge + 1, nAngle, nAngle + perNote),
+          color: on
+            ? (si % 2 === 0 ? lightenHex(cd.color, 0.30) : lightenHex(cd.color, 0.16))
+            : lightenHex(cd.color, 0.78),
+          mid: nAngle + perNote / 2,
+          sweep: perNote,
+          labelSweep: labelSweeps[si],
+          selected: on,
+          rMin: catEdge + 1, rMax: outerR,
+          note,
+          catId: cd.cat.id,
+        });
         nAngle += perNote + GAP;
       });
     }
@@ -421,7 +374,7 @@ export function AromaDonutChart({
 
     // Items ring (most specific — check first)
     if (showItems) {
-      const hit = itemSegs.find(s => r >= s.rMin && r <= s.rMax && inSweep(a, s.mid, s.sweep));
+      const hit = itemSegs.find(s => s.selected && r >= s.rMin && r <= s.rMax && inSweep(a, s.mid, s.sweep));
       if (hit) {
         const cat = AROMA_CATEGORIES.find(x => x.id === hit.catId);
         setSelected({ color: hit.color, title: `${cat?.emoji ?? ''} ${cat?.label ?? ''}`, items: [hit.note] });
@@ -571,15 +524,16 @@ export function AromaDonutChart({
             );
           })}
 
-          {/* Items ring text labels — radial/spoke orientation, evenly spaced
-               across each category's own wedge regardless of item count, and
-               sized down (not truncated) for long names. */}
+          {/* Items ring text labels — ONLY for aromas actually selected on this
+               wine. Unselected wedges carry no text. If a selected label still
+               can't fit at MIN_OUTER_FONT, its text is dropped (wedge stays). */}
           {showItems && itemSegs.map((s, i) => {
-            if (s.sweep < 2) return null;
+            if (!s.selected || s.sweep < 2) return null;
             const tr = (catEdge + outerR) / 2;
             const pos = polar(cx, cy, tr, s.mid);
             const rot = spokeLabelRot(s.mid);
-            const { fontSize, text } = computeOuterLabel(itemFontSize, s.note, s.sweep, tr, outerR - catEdge);
+            const { fontSize, text } = computeOuterLabel(itemFontSize, s.note, s.labelSweep, tr, outerR - catEdge);
+            if (text === null) return null;
             return (
               <G key={`il${i}`} transform={`translate(${pos.x.toFixed(1)},${pos.y.toFixed(1)}) rotate(${rot})`}>
                 <SvgText

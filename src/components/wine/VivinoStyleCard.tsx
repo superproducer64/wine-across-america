@@ -312,7 +312,8 @@ export function VivinoStyleCard({ entry }: Props) {
             )}
             <AxisSlider left="Light Body" right="Full Body" value={norm(entry.body)} onPress={() => openAxis('Light Body', 'Full Body')} />
             <AxisSlider left="Soft" right="Tannic" value={norm(entry.tannin)} onPress={() => openAxis('Soft', 'Tannic')} />
-            <AxisSlider left="Low Acid" right="High Acid" value={norm(entry.acidity)} onPress={() => openAxis('Low Acid', 'High Acid')} />          </View>
+            <AxisSlider left="Low Acid" right="High Acid" value={norm(entry.acidity)} onPress={() => openAxis('Low Acid', 'High Acid')} />
+          </View>
         </View>
 
         <InfoPopover

@@ -639,7 +639,7 @@ export function WineDetailScreen({ route, navigation }: Props) {
       />
 
       {/* Label photo lightbox */}
-      {entry.label_photo_url && (() => {
+      {!!entry.label_photo_url && (() => {
         const photos: LabelPhoto[] = [
           { uri: entry.label_photo_url!, label: 'Front Label', blurhash: entry.label_photo_blurhash },
         ];

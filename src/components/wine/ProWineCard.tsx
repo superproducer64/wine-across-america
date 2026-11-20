@@ -79,7 +79,7 @@ export function ProWineCard({ entry, compact = false }: Props) {
   const origin = [entry.subregion, entry.region, entry.country].filter(Boolean).join(', ');
   const wineTitle = [entry.name, entry.vintage].filter(Boolean).join(' ');
 
-  const isBestValue = entry.want_to_buy && score >= 80;
+  const isBestValue = !!entry.want_to_buy && score >= 80;
   const hasAromas = entry.aromas_l1.length > 0;
 
   return (
@@ -308,7 +308,7 @@ export function ProWineCard({ entry, compact = false }: Props) {
       )}
 
       {/* ── Label Photo Lightbox ── */}
-      {(entry.label_photo_url || entry.back_label_photo_url) && (() => {
+      {!!(entry.label_photo_url || entry.back_label_photo_url) && (() => {
         const photos: LabelPhoto[] = [];
         if (entry.label_photo_url) photos.push({ uri: entry.label_photo_url, label: 'Front Label', blurhash: entry.label_photo_blurhash });
         if (entry.back_label_photo_url) photos.push({ uri: entry.back_label_photo_url, label: 'Back Label' });

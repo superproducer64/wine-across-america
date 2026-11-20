@@ -109,7 +109,7 @@ export function HomeScreen() {
           </View>
         </View>
 
-        {topGrape && (
+        {!!topGrape && (
           <View style={styles.grapeCard}>
             <Text style={styles.grapeEmoji}>🍇</Text>
             <View>

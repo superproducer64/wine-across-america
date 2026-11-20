@@ -293,7 +293,7 @@ export function Step2StructureWheel() {
           </GestureDetector>
         </View>
 
-        {openInfo && PARAMETER_CAROUSEL_INDEX[openInfo] !== undefined && (
+        {!!openInfo && PARAMETER_CAROUSEL_INDEX[openInfo] !== undefined && (
           <ImageInfoSheet
             visible
             onClose={() => setOpenInfo(null)}
@@ -326,7 +326,7 @@ export function Step2StructureWheel() {
         </GestureDetector>
       </ScrollView>
 
-      {openInfo && PARAMETER_CAROUSEL_INDEX[openInfo] !== undefined && (
+      {!!openInfo && PARAMETER_CAROUSEL_INDEX[openInfo] !== undefined && (
         <ImageInfoSheet
           visible
           onClose={() => setOpenInfo(null)}

@@ -183,7 +183,7 @@ export function ShareCardScreen({ route, navigation }: Props) {
         </Pressable>
       </View>
 
-      {cardUri && user && (
+      {!!cardUri && !!user && (
         <ShareCardToMemberModal
           visible={showMemberModal}
           onClose={() => setShowMemberModal(false)}

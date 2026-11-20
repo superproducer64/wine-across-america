@@ -306,7 +306,7 @@ export function LabelScannerModal({ visible, onClose, onApply, userId }: Props) 
             {phase === 'pick_back' && (
               <View style={styles.pickBackPhase}>
                 {/* Front photo thumbnail */}
-                {frontUri && (
+                {!!frontUri && (
                   <View style={styles.frontThumbWrap}>
                     <Image source={{ uri: frontUri }} style={styles.frontThumb} />
                     <View style={styles.frontThumbBadge}>
@@ -341,10 +341,10 @@ export function LabelScannerModal({ visible, onClose, onApply, userId }: Props) 
             {phase === 'uploading' && (
               <View style={styles.loadingPhase}>
                 <View style={styles.photoRow}>
-                  {frontUri && (
+                  {!!frontUri && (
                     <Image source={{ uri: frontUri }} style={[styles.previewImage, backUri ? styles.previewImageHalf : undefined]} />
                   )}
-                  {backUri && (
+                  {!!backUri && (
                     <Image source={{ uri: backUri }} style={[styles.previewImage, styles.previewImageHalf]} />
                   )}
                 </View>
@@ -360,10 +360,10 @@ export function LabelScannerModal({ visible, onClose, onApply, userId }: Props) 
             {phase === 'recognition' && (
               <View style={styles.recognitionPhase}>
                 <View style={styles.photoRow}>
-                  {frontUri && (
+                  {!!frontUri && (
                     <Image source={{ uri: frontUri }} style={[styles.recognitionImage, backUri ? styles.recognitionImageHalf : undefined]} />
                   )}
-                  {backUri && (
+                  {!!backUri && (
                     <Image source={{ uri: backUri }} style={[styles.recognitionImage, styles.recognitionImageHalf]} />
                   )}
                 </View>
@@ -443,18 +443,18 @@ export function LabelScannerModal({ visible, onClose, onApply, userId }: Props) 
               <View style={styles.reviewPhase}>
                 {/* Photo previews */}
                 <View style={styles.photoRow}>
-                  {frontUri && (
+                  {!!frontUri && (
                     <View style={[styles.photoPreviewWrap, backUri ? styles.photoPreviewHalf : undefined]}>
                       <Image source={{ uri: frontUri }} style={styles.reviewImage} />
                       <Text style={styles.photoLabel}>Front</Text>
-                      {photoUrl && !backUri && (
+                      {!!photoUrl && !backUri && (
                         <View style={styles.savedBadge}>
                           <Text style={styles.savedBadgeText}>📎 Photo saved</Text>
                         </View>
                       )}
                     </View>
                   )}
-                  {backUri && (
+                  {!!backUri && (
                     <View style={[styles.photoPreviewWrap, styles.photoPreviewHalf]}>
                       <Image source={{ uri: backUri }} style={styles.reviewImage} />
                       <Text style={styles.photoLabel}>Back</Text>

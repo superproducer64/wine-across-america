@@ -130,10 +130,16 @@ export interface AromaDrilldownPickerProps {
   aromasL2: string[];
   /** Sommelier profiles also get the s:true aromas, same as the old list. */
   isSommelier: boolean;
-  onChange: (aromasL1: string[], aromasL2: string[]) => void;
+  /** Omit (or pass readOnly) to show the wheel as a display only. */
+  onChange?: (aromasL1: string[], aromasL2: string[]) => void;
+  /** Display only: tapping a category still opens it, but aromas can't be toggled. */
+  readOnly?: boolean;
+  /** Fixed wheel diameter; otherwise fits the container width (max 440). */
+  size?: number;
 }
 
-export function AromaDrilldownPicker({ aromasL1, aromasL2, isSommelier, onChange }: AromaDrilldownPickerProps) {
+export function AromaDrilldownPicker({ aromasL1, aromasL2, isSommelier, onChange, readOnly = false, size }: AromaDrilldownPickerProps) {
+  const editable = !readOnly && !!onChange;
   const [openCatId, setOpenCatId] = useState<string | null>(null);
   const [width, setWidth] = useState(0);
   const win = useWindowDimensions();
@@ -141,7 +147,7 @@ export function AromaDrilldownPicker({ aromasL1, aromasL2, isSommelier, onChange
 
   const sel = { aromasL1, aromasL2 };
   const openCat = AROMA_CATEGORIES.find(c => c.id === openCatId) ?? null;
-  const masterSize = Math.min(width || win.width - 2 * Spacing.xl, 440);
+  const masterSize = size ?? Math.min(width || win.width - 2 * Spacing.xl, 440);
 
   const masterSectors: Sector[] = AROMA_CATEGORIES.map(cat => {
     const color = CAT_TO_COLOR[cat.id];
@@ -201,19 +207,21 @@ export function AromaDrilldownPicker({ aromasL1, aromasL2, isSommelier, onChange
               <Pressable onPress={close} hitSlop={10} style={styles.headerBtn}>
                 <Text style={styles.backText}>‹ All categories</Text>
               </Pressable>
-              <Pressable
-                onPress={() => {
-                  const next = clearCategory(sel, openCat);
-                  onChange(next.aromasL1, next.aromasL2);
-                }}
-                hitSlop={10}
-                style={styles.headerBtn}
-              >
-                <Text style={styles.clearText}>Clear</Text>
-              </Pressable>
+              {editable ? (
+                <Pressable
+                  onPress={() => {
+                    const next = clearCategory(sel, openCat);
+                    onChange!(next.aromasL1, next.aromasL2);
+                  }}
+                  hitSlop={10}
+                  style={styles.headerBtn}
+                >
+                  <Text style={styles.clearText}>Clear</Text>
+                </Pressable>
+              ) : <View />}
             </View>
             <Text style={[styles.title, { color: detailColor }]}>{openCat.emoji} {openCat.label}</Text>
-            <Text style={styles.hint}>Tap an aroma to select it. Tap again to remove.</Text>
+            <Text style={styles.hint}>{editable ? 'Tap an aroma to select it. Tap again to remove.' : 'Highlighted aromas are the ones noted for this wine.'}</Text>
             <View style={styles.wheelWrap}>
               <SectorWheel
                 size={detailSize}
@@ -223,8 +231,9 @@ export function AromaDrilldownPicker({ aromasL1, aromasL2, isSommelier, onChange
                 centerTitle={String(categoryNoteCount(openCat, aromasL2))}
                 centerSub="selected"
                 onPressSector={i => {
+                  if (!editable) return;
                   const next = toggleAroma(sel, openCat, detailNotes[i]);
-                  onChange(next.aromasL1, next.aromasL2);
+                  onChange!(next.aromasL1, next.aromasL2);
                 }}
               />
             </View>

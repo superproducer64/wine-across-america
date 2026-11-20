@@ -12,12 +12,16 @@ import { useEntryDraftStore } from '@/stores/entryDraftStore';
 import { useAuthStore } from '@/stores/authStore';
 import {
   AROMA_CATEGORIES,
+  AROMA_GROUPS,
   WINE_SHORTCUTS,
   WineShortcut,
+  getCategorySubcategories,
 } from '@/types';
-import { AromaDrilldownPicker } from '@/components/charts/AromaDrilldownPicker';
 
 import { useResponsive } from '@/hooks/useResponsive';
+
+const CAT_TO_GROUP: Record<string, typeof AROMA_GROUPS[0]> = {};
+AROMA_GROUPS.forEach(g => g.categoryIds.forEach(cid => { CAT_TO_GROUP[cid] = g; }));
 
 const MAX_CUSTOM_TAGS = 20;
 const MAX_TAG_LENGTH = 40;
@@ -32,6 +36,7 @@ export function Step3Aromas() {
   } = useEntryDraftStore();
   const { profile } = useAuthStore();
   const { isWide } = useResponsive();
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [activeShortcutId, setActiveShortcutId] = useState<string | null>(null);
   const [customInput, setCustomInput] = useState('');
 
@@ -50,10 +55,27 @@ export function Step3Aromas() {
     setCustomAromas(draft.custom_aromas.filter((t) => t !== tag));
   };
 
-  // Picker edits go straight to the same draft fields (aromas_l1 / aromas_l2)
-  // the old category list wrote to; any manual edit clears the active shortcut.
-  const handlePickerChange = (l1: string[], l2: string[]) => {
-    setAromas(l1, l2);
+  const toggleL1 = (id: string) => {
+    const current = draft.aromas_l1;
+    if (current.includes(id)) {
+      const category = AROMA_CATEGORIES.find((c) => c.id === id);
+      const allSubs = category ? getCategorySubcategories(category, true) : [];
+      const l2Next = draft.aromas_l2.filter((a) => !allSubs.includes(a));
+      setAromas(current.filter((a) => a !== id), l2Next);
+      if (expandedCategory === id) setExpandedCategory(null);
+      return;
+    }
+    setAromas([...current, id], draft.aromas_l2);
+    setExpandedCategory(id);
+    setActiveShortcutId(null);
+  };
+
+  const toggleL2 = (aroma: string) => {
+    const current = draft.aromas_l2;
+    setAromas(
+      draft.aromas_l1,
+      current.includes(aroma) ? current.filter((a) => a !== aroma) : [...current, aroma]
+    );
     setActiveShortcutId(null);
   };
 
@@ -64,6 +86,7 @@ export function Step3Aromas() {
     } else {
       applyWineShortcut(shortcut);
       setActiveShortcutId(shortcut.id);
+      setExpandedCategory(null);
     }
   };
 
@@ -95,7 +118,7 @@ export function Step3Aromas() {
       )}
       {draft.aromas_l1.length === 0 && (
         <Text style={styles.summaryHint}>
-          Tap a category on the wheel to build your aroma profile.
+          Tap a category below to build your aroma profile.
         </Text>
       )}
     </View>
@@ -141,28 +164,101 @@ export function Step3Aromas() {
         )}
       </View>
 
-      <AromaDrilldownPicker
-        aromasL1={draft.aromas_l1}
-        aromasL2={draft.aromas_l2}
-        isSommelier={isSommelier}
-        onChange={handlePickerChange}
-      />
+      <View style={styles.flatCatList}>
+        {AROMA_CATEGORIES.map((cat) => {
+          const group = CAT_TO_GROUP[cat.id];
+          const color = group?.color ?? Colors.gold;
+          const selected = draft.aromas_l1.includes(cat.id);
+          const isExpanded = expandedCategory === cat.id;
+          const subcategories = getCategorySubcategories(cat, isSommelier);
 
-      {draft.aromas_l1.includes('other') && (
-        <View style={styles.otherNoteWrapper}>
-          <Text style={styles.otherNoteLabel}>Describe "Other" further</Text>
-          <RNTextInput
-            style={styles.otherNoteInput}
-            value={draft.aromas_other_note ?? ''}
-            onChangeText={setAromasOtherNote}
-            placeholder="e.g. wet slate, incense, beeswax…"
-            placeholderTextColor={Colors.inkFaint}
-            multiline
-            numberOfLines={2}
-            textAlignVertical="top"
-          />
-        </View>
-      )}
+          return (
+            <View key={cat.id} style={styles.categoryBlock}>
+              <Pressable
+                style={[
+                  styles.catChip,
+                  selected && { backgroundColor: color + '1A', borderColor: color },
+                ]}
+                onPress={() => toggleL1(cat.id)}
+              >
+                <Text style={styles.catEmoji}>{cat.emoji}</Text>
+                <Text style={[styles.catLabel, selected && { color: Colors.ink, fontFamily: Fonts.dmSansMedium }]}>
+                  {cat.label}
+                </Text>
+                {selected && (
+                  <Text style={[styles.catCheck, { color }]}>✓</Text>
+                )}
+              </Pressable>
+
+              {/* L2 drill-down — inline below the chip when expanded */}
+              {selected && isExpanded && (
+                <View style={styles.l2Container}>
+                  <View style={[styles.l2Indent, { borderLeftColor: color + '55' }]}>
+                    <View style={styles.l2Grid}>
+                      {subcategories.map((aroma) => {
+                        const isSommelierSub =
+                          isSommelier && (cat.sommelierSubcategories ?? []).includes(aroma);
+                        const isSelected = draft.aromas_l2.includes(aroma);
+                        return (
+                          <Pressable
+                            key={aroma}
+                            style={[
+                              styles.l2Chip,
+                              isSelected && { backgroundColor: color + '28', borderColor: color },
+                              isSommelierSub && !isSelected && styles.l2ChipSommelier,
+                            ]}
+                            onPress={() => toggleL2(aroma)}
+                          >
+                            <Text style={[styles.l2Text, isSelected && { color: Colors.inkMid, fontFamily: Fonts.dmSansRegular }]}>
+                              {aroma}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+
+                    {cat.id === 'other' && (
+                      <View style={styles.otherNoteWrapper}>
+                        <Text style={styles.otherNoteLabel}>Describe further</Text>
+                        <RNTextInput
+                          style={styles.otherNoteInput}
+                          value={draft.aromas_other_note ?? ''}
+                          onChangeText={setAromasOtherNote}
+                          placeholder="e.g. wet slate, incense, beeswax…"
+                          placeholderTextColor={Colors.inkFaint}
+                          multiline
+                          numberOfLines={2}
+                          textAlignVertical="top"
+                        />
+                      </View>
+                    )}
+                  </View>
+
+                  <Pressable onPress={() => setExpandedCategory(null)} style={styles.collapseBtn}>
+                    <Text style={[styles.collapseBtnText, { color }]}>Done ↑</Text>
+                  </Pressable>
+                </View>
+              )}
+
+              {selected && !isExpanded && (
+                <Pressable onPress={() => setExpandedCategory(cat.id)} style={styles.expandRow}>
+                  <Text style={[styles.expandHint, { color }]}>
+                    {draft.aromas_l2.filter((l2) =>
+                      getCategorySubcategories(cat, isSommelier).includes(l2)
+                    ).length > 0
+                      ? `${draft.aromas_l2.filter((l2) =>
+                          getCategorySubcategories(cat, isSommelier).includes(l2)
+                        ).length} note${draft.aromas_l2.filter((l2) =>
+                          getCategorySubcategories(cat, isSommelier).includes(l2)
+                        ).length > 1 ? 's' : ''} · Edit ↓`
+                      : '+ Add specific notes'}
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          );
+        })}
+      </View>
     </>
   );
 
@@ -221,7 +317,7 @@ export function Step3Aromas() {
             <Text style={styles.stepTitle}>Aroma Profile</Text>
           </View>
           <Text style={styles.intro}>
-            Select the aromas you detect. Tap a category, then tap the aromas you detect.
+            Select the aromas you detect. Tap a category then pick specific notes.
           </Text>
         </View>
 
@@ -256,7 +352,7 @@ export function Step3Aromas() {
           <Text style={styles.stepTitle}>Aroma Profile</Text>
         </View>
         <Text style={styles.intro}>
-          Select the aromas you detect. Tap a category, then tap the aromas you detect.
+          Select the aromas you detect. Tap a category then pick specific notes.
         </Text>
         {categoriesPanel}
         {personalNotesPanel}
@@ -388,8 +484,79 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
+  flatCatList: {
+    gap: 6,
+    marginTop: 4,
+  },
+  categoryBlock: { gap: 4 },
+  catChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surfaceAlt,
+  },
+  catEmoji: { fontSize: 15 },
+  catLabel: {
+    fontFamily: Fonts.dmSansRegular,
+    fontSize: 13,
+    color: Colors.inkMid,
+    flex: 1,
+  },
+  catCheck: {
+    fontFamily: Fonts.dmSansMedium,
+    fontSize: 13,
+  },
 
+  l2Container: { gap: 4 },
+  l2Indent: {
+    marginLeft: Spacing.lg,
+    paddingLeft: Spacing.md,
+    borderLeftWidth: 2,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.sm,
+  },
+  l2Grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  l2Chip: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+  },
+  l2ChipSommelier: {
+    borderStyle: 'dashed',
+  },
+  l2Text: {
+    fontFamily: Fonts.dmSans,
+    fontSize: 12,
+    color: Colors.inkMuted,
+  },
 
+  collapseBtn: {
+    alignSelf: 'flex-start',
+    marginLeft: Spacing.lg,
+    paddingVertical: 2,
+  },
+  collapseBtnText: {
+    fontFamily: Fonts.dmSansMedium,
+    fontSize: 11,
+  },
+  expandRow: { paddingLeft: Spacing.lg },
+  expandHint: {
+    fontFamily: Fonts.dmSans,
+    fontSize: 12,
+    paddingVertical: 2,
+  },
 
   otherNoteWrapper: {
     marginTop: Spacing.sm,

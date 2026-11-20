@@ -6,6 +6,7 @@ import { Colors, Fonts, Radius, Spacing, Shadows } from '@/theme';
 import { WineEntry } from '@/types';
 import { RadarChart } from '@/components/charts/RadarChart';
 import { AromaDonutChart } from '@/components/charts/AromaDonutChart';
+import { AromaDrilldownPicker } from '@/components/charts/AromaDrilldownPicker';
 import { InfoPopover } from '@/components/ui/InfoPopover';
 import { LabelPhotoModal, LabelPhoto } from '@/components/wine/LabelPhotoModal';
 
@@ -290,12 +291,14 @@ export function ProWineCard({ entry, compact = false }: Props) {
                 bounces={false}
                 contentContainerStyle={styles.popoverScroll}
               >
-                <AromaDonutChart
+                {/* Drill-down wheel (display only) — driven by the aromas picked in
+                    Step 2's list. Tap a category to see its aromas. */}
+                <AromaDrilldownPicker
                   aromasL1={entry.aromas_l1}
                   aromasL2={entry.aromas_l2}
+                  isSommelier={false}
+                  readOnly
                   size={popoverSize}
-                  showLegend
-                  pinchable
                 />
               </ScrollView>
             </Pressable>

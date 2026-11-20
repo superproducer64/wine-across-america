@@ -5,7 +5,6 @@ import { LABEL_PHOTO_PLACEHOLDER } from '@/utils/imagePlaceholder';
 import { Colors, Fonts, Radius, Spacing, Shadows } from '@/theme';
 import { WineEntry } from '@/types';
 import { RadarChart } from '@/components/charts/RadarChart';
-import { AromaDonutChart } from '@/components/charts/AromaDonutChart';
 import { AromaDrilldownPicker } from '@/components/charts/AromaDrilldownPicker';
 import { InfoPopover } from '@/components/ui/InfoPopover';
 import { LabelPhotoModal, LabelPhoto } from '@/components/wine/LabelPhotoModal';
@@ -189,11 +188,13 @@ export function ProWineCard({ entry, compact = false }: Props) {
               style={styles.wheelTouchable}
             >
               <Text style={[styles.colLabel, compact && styles.smallLabel]}>Aroma Profile</Text>
-              <AromaDonutChart
+              <AromaDrilldownPicker
                 aromasL1={entry.aromas_l1}
                 aromasL2={entry.aromas_l2}
+                isSommelier
+                readOnly
+                interactive={false}
                 size={colSize}
-                showLegend={false}
               />
               <View style={styles.expandBtn}>
                 <Text style={styles.expandBtnText}>⊕ Expand wheel</Text>
@@ -296,7 +297,7 @@ export function ProWineCard({ entry, compact = false }: Props) {
                 <AromaDrilldownPicker
                   aromasL1={entry.aromas_l1}
                   aromasL2={entry.aromas_l2}
-                  isSommelier={false}
+                  isSommelier
                   readOnly
                   size={popoverSize}
                 />

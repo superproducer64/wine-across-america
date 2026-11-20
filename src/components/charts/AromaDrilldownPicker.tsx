@@ -31,16 +31,21 @@ type Sector = {
 };
 
 function SectorWheel({
-  size, sectors, holeRatio, maxFont, centerTitle, centerSub, onPressSector,
+  size, sectors, holeRatio, maxFont, minFont = 9, centerTitle, centerSub, onPressSector,
 }: {
   size: number;
   sectors: Sector[];
   holeRatio: number;
   maxFont: number;
+  minFont?: number;
   centerTitle: string;
   centerSub: string;
-  onPressSector: (index: number) => void;
+  /** Omit for a static (non-tappable) wheel. */
+  onPressSector?: (index: number) => void;
 }) {
+  const compact = size < 200;
+  const badgeR = compact ? 6 : 10;
+  const badgeFont = compact ? 7.5 : 11;
   const cx = size / 2;
   const cy = size / 2;
   const outerR = size / 2 - 2;
@@ -50,14 +55,17 @@ function SectorWheel({
   const tr = (innerR + outerR) / 2;
   const arcLen = ((step - SECTOR_GAP) * Math.PI / 180) * tr;
 
+  const Wrapper: any = onPressSector ? Pressable : View;
+  const wrapperProps = onPressSector
+    ? {
+        onPress: (e: any) => {
+          const i = sectorIndexAt(e.nativeEvent.locationX, e.nativeEvent.locationY, cx, cy, innerR, outerR, n);
+          if (i !== null) onPressSector(i);
+        },
+      }
+    : {};
   return (
-    <Pressable
-      style={{ width: size, height: size }}
-      onPress={e => {
-        const i = sectorIndexAt(e.nativeEvent.locationX, e.nativeEvent.locationY, cx, cy, innerR, outerR, n);
-        if (i !== null) onPressSector(i);
-      }}
-    >
+    <Wrapper style={{ width: size, height: size }} {...wrapperProps}>
       <Svg width={size} height={size} pointerEvents="none">
         {sectors.map((s, i) => (
           <Path
@@ -76,15 +84,15 @@ function SectorWheel({
         </SvgText>
         <SvgText
           x={cx} y={cy + innerR * 0.5} textAnchor="middle"
-          fontSize={Math.max(9, innerR * 0.2)} fontFamily={Fonts.dmSans} fill="#9A8590"
+          fontSize={Math.max(compact ? 6 : 9, innerR * 0.2)} fontFamily={Fonts.dmSans} fill="#9A8590"
         >
           {centerSub}
         </SvgText>
         {sectors.map((s, i) => {
           const mid = i * step + step / 2;
-          const pos = polar(cx, cy, tr - (s.badge ? 6 : 0), mid);
+          const pos = polar(cx, cy, tr - (s.badge ? badgeR * 0.6 : 0), mid);
           const lines = splitLabelTwoLines(s.label);
-          const font = fitSectorLabel(lines, outerR - innerR - (s.badge ? 20 : 0), arcLen, maxFont, 9);
+          const font = fitSectorLabel(lines, outerR - innerR - (s.badge ? badgeR * 2 : 0), arcLen, maxFont, minFont);
           const lh = font * 1.15;
           return (
             <G key={`l${s.key}`}>
@@ -104,13 +112,13 @@ function SectorWheel({
                 ))}
               </G>
               {s.badge ? (() => {
-                const b = polar(cx, cy, outerR - 13, mid);
+                const b = polar(cx, cy, outerR - badgeR - 3, mid);
                 return (
                   <G>
-                    <Circle cx={b.x} cy={b.y} r={10} fill="white" />
+                    <Circle cx={b.x} cy={b.y} r={badgeR} fill="white" />
                     <SvgText
                       x={b.x} y={b.y} textAnchor="middle" alignmentBaseline="central"
-                      fontSize={11} fontFamily={Fonts.dmSansMedium} fill={s.fill}
+                      fontSize={badgeFont} fontFamily={Fonts.dmSansMedium} fill={s.fill}
                     >
                       {s.badge}
                     </SvgText>
@@ -121,7 +129,7 @@ function SectorWheel({
           );
         })}
       </Svg>
-    </Pressable>
+    </Wrapper>
   );
 }
 
@@ -136,9 +144,14 @@ export interface AromaDrilldownPickerProps {
   readOnly?: boolean;
   /** Fixed wheel diameter; otherwise fits the container width (max 440). */
   size?: number;
+  /**
+   * false = static render of the master wheel only: no taps, no drill-down.
+   * Used for the small wheel on the wine card. Default true.
+   */
+  interactive?: boolean;
 }
 
-export function AromaDrilldownPicker({ aromasL1, aromasL2, isSommelier, onChange, readOnly = false, size }: AromaDrilldownPickerProps) {
+export function AromaDrilldownPicker({ aromasL1, aromasL2, isSommelier, onChange, readOnly = false, size, interactive = true }: AromaDrilldownPickerProps) {
   const editable = !readOnly && !!onChange;
   const [openCatId, setOpenCatId] = useState<string | null>(null);
   const [width, setWidth] = useState(0);
@@ -148,6 +161,7 @@ export function AromaDrilldownPicker({ aromasL1, aromasL2, isSommelier, onChange
   const sel = { aromasL1, aromasL2 };
   const openCat = AROMA_CATEGORIES.find(c => c.id === openCatId) ?? null;
   const masterSize = size ?? Math.min(width || win.width - 2 * Spacing.xl, 440);
+  const staticWheel = !interactive;
 
   const masterSectors: Sector[] = AROMA_CATEGORIES.map(cat => {
     const color = CAT_TO_COLOR[cat.id];
@@ -164,7 +178,11 @@ export function AromaDrilldownPicker({ aromasL1, aromasL2, isSommelier, onChange
   });
 
   const detailSize = Math.max(240, Math.min(win.width - 2 * Spacing.lg, win.height - insets.top - insets.bottom - 190, 560));
-  const detailNotes = openCat ? getCategorySubcategories(openCat, isSommelier) : [];
+  // Display-only views list EVERY aroma in the category. Gating on the viewer's
+  // profile would hide sommelier-only aromas that were selected on the wine,
+  // so they could never render or highlight (and the master count, which counts
+  // all aromas, would disagree with the wedges shown).
+  const detailNotes = openCat ? getCategorySubcategories(openCat, isSommelier || readOnly) : [];
   const detailColor = openCat ? CAT_TO_COLOR[openCat.id] : Colors.gold;
   const detailSectors: Sector[] = detailNotes.map(note => {
     const on = aromasL2.includes(note);
@@ -189,13 +207,14 @@ export function AromaDrilldownPicker({ aromasL1, aromasL2, isSommelier, onChange
         size={masterSize}
         sectors={masterSectors}
         holeRatio={0.28}
-        maxFont={14}
+        maxFont={staticWheel ? 9 : 14}
+        minFont={staticWheel ? 4.5 : 9}
         centerTitle={String(aromasL2.length)}
         centerSub={aromasL2.length === 1 ? 'aroma' : 'aromas'}
-        onPressSector={i => setOpenCatId(AROMA_CATEGORIES[i].id)}
+        onPressSector={staticWheel ? undefined : i => setOpenCatId(AROMA_CATEGORIES[i].id)}
       />
 
-      <Modal
+      {!staticWheel && <Modal
         visible={openCat !== null}
         animationType="slide"
         presentationStyle="fullScreen"
@@ -242,13 +261,13 @@ export function AromaDrilldownPicker({ aromasL1, aromasL2, isSommelier, onChange
             </Pressable>
           </View>
         )}
-      </Modal>
+      </Modal>}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { alignItems: 'center', marginVertical: Spacing.md },
+  root: { alignItems: 'center' },
   modalRoot: { flex: 1, backgroundColor: Colors.surface, alignItems: 'center' },
   header: {
     width: '100%',
